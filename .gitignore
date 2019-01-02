@@ -1,0 +1,5 @@
+build
+seda_data
+.env
+*.zip
+.vscode
