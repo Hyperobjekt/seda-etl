@@ -7,8 +7,8 @@ counties-geoid = "this.properties.GEOID = this.properties.STATE + this.propertie
 geo_types = counties districts
 geo_files = $(foreach t, $(geo_types), build/geography/$(t).geojson)
 
-tippecanoe_opts = --attribute-type=GEOID:string --simplification=10 --simplify-only-low-zooms --maximum-zoom=10 --no-tile-stats --force
-tile_join_opts = --no-tile-size-limit --force --no-tile-stats
+tippecanoe_opts = --attribute-type=GEOID:string --simplification=10 --coalesce-densest-as-needed --maximum-zoom=12 --no-tile-stats --force
+tile_join_opts = --empty-csv-columns-are-null --force --no-tile-stats
 
 # min zoom to generate tiles for
 counties_min_zoom = 2
@@ -16,10 +16,9 @@ districts_min_zoom = 2
 
 # max tile size for geography
 counties_bytes = 500000
-districts_bytes = 500000
+districts_bytes = 200000
 
-census_opts = --detect-shared-borders --coalesce-smallest-as-needed
-
+# column name mapping
 og_cols = mn_avg_ol,mn_grd_ol,mn_mth_ol
 new_cols = mn_ach,mn_slp,mn_diff
 
@@ -29,8 +28,8 @@ space := $(null) $(null)
 comma := ,
 
 # Assign layer properties based on minimum zoom
-$(foreach g, $(geo_types), $(eval $(g)_census_opts = --minimum-zoom=$($g_min_zoom) $(census_opts)))
-$(foreach g, $(geo_types), $(eval $(g)_centers_opts = -B$($g_min_zoom)))
+$(foreach g, $(geo_types), $(eval $(g)_census_opts = --maximum-tile-bytes=$($g_bytes) --minimum-zoom=$($g_min_zoom) --detect-shared-borders))
+$(foreach g, $(geo_types), $(eval $(g)_centers_opts = --base-zoom=4))
 
 # Edit node commands to use additional memory
 mapshaper_cmd = node --max_old_space_size=4096 $$(which mapshaper)
@@ -51,8 +50,8 @@ clean:
 
 ### TILES
 
-## build/tiles/%.mbtiles                  : Convert geography GeoJSON to .mbtiles
-build/tiles/%.mbtiles: build/tiles/centers/%.mbtiles build/tiles/shapes/%-data.mbtiles
+## build/tiles/%.mbtiles                        : Convert geography GeoJSON to .mbtiles
+build/tiles/%.mbtiles: build/tiles/centers/%-data.mbtiles build/tiles/shapes/%-data.mbtiles
 	mkdir -p $(dir $@)
 	tile-join -n $* $(tile_join_opts) -o $@ $^
 
@@ -60,6 +59,10 @@ build/tiles/%.mbtiles: build/tiles/centers/%.mbtiles build/tiles/shapes/%-data.m
 build/tiles/centers/%.mbtiles: build/geography/%-centers.geojson
 	mkdir -p $(dir $@)
 	tippecanoe -L $*-centers:$< $(tippecanoe_opts) $($*_centers_opts) -o $@
+
+build/tiles/centers/%-data.mbtiles: build/processed/%-centers.csv build/tiles/centers/%.mbtiles
+	mkdir -p $(dir $@)
+	tile-join -l $*-centers $(tile_join_opts) -o $@ -c $^
 
 ## build/tiles/shapes/%.mbtiles                 : Census .mbtiles with specific flags for census geography
 build/tiles/shapes/%.mbtiles: build/geography/%.geojson
@@ -115,12 +118,20 @@ build/data/crosswalk-counties.csv:
 build/processed/counties.csv:
 	mkdir -p $(dir $@)
 	csvgrep -c subgroup -m all ./build/data/SEDA_county_pool_GCS_v21.csv | \
-	csvcut -c countyid,$(og_cols) | \
-	sed -e "1s/.*/GEOID,$(new_cols)/" > $@
+	csvcut -c countyid,countyname,$(og_cols) | \
+	sed -e "1s/.*/GEOID,name,$(new_cols)/" > $@
+
+build/processed/counties-centers.csv: build/processed/counties.csv
+	mkdir -p $(dir $@)
+	csvcut -c GEOID,name $^ > $@
 
 ## build/processed/districts.csv                     : Data for districts
 build/processed/districts.csv:
 	mkdir -p $(dir $@)
 	csvgrep -c subgroup -m all ./build/data/SEDA_geodist_pool_GCS_v21.csv | \
-	csvcut -c leaidC,$(og_cols) | \
-	sed -e "1s/.*/GEOID,$(new_cols)/" > $@
+	csvcut -c leaidC,leaname,$(og_cols) | \
+	sed -e "1s/.*/GEOID,name,$(new_cols)/" > $@
+
+build/processed/districts-centers.csv: build/processed/districts.csv
+	mkdir -p $(dir $@)
+	csvcut -c GEOID,name $^ > $@
