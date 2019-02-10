@@ -25,6 +25,8 @@ if __name__ == '__main__':
         os.path.join(DATA_DIR, f),
         dtype={ 
           'leaidC': 'object', 
+          'ncessch': 'object',
+          'countyid': 'object',
           'name': 'object' 
         }
       )
@@ -40,7 +42,7 @@ if __name__ == '__main__':
       (dict_df['source_file'] == files[i]) & (dict_df['row_condition'] == '')
     ]
     if not copy_df.empty:
-      values_df = df[copy_df.column.values]
+      values_df = df[copy_df.column.values].drop_duplicates()
       values_df.columns = copy_df.output_column.values
       values_df.set_index('id', inplace=True)
       output_a_df_list.append(values_df)

@@ -1,0 +1,10 @@
+name,output_column,source_file,column,row_condition
+Identifier,id,SEDA_school_pool_GCS_v30_latlong.csv,ncessch,
+Name,name,SEDA_school_pool_GCS_v30_latlong.csv,schoolname,
+State Fips,s_fips,SEDA_school_pool_GCS_v30_latlong.csv,fipst,
+Latitude,lat,SEDA_school_pool_GCS_v30_latlong.csv,latcode,
+Longitude,lon,SEDA_school_pool_GCS_v30_latlong.csv,loncode,
+Identifier,id,SEDA_school_pool_GCS_v30_latlong.csv,ncessch,subgroup == 'all'
+Average test score,all_avg,SEDA_school_pool_GCS_v30_latlong.csv,mn_avg_eb,subgroup == 'all'
+Growth in grades across years,all_grd,SEDA_school_pool_GCS_v30_latlong.csv,mn_grd_eb,subgroup == 'all'
+Trend in test scores across years,all_coh,SEDA_school_pool_GCS_v30_latlong.csv,mn_coh_eb,subgroup == 'all'

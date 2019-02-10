@@ -109,29 +109,12 @@ build/shp/2013_Unified_Elementary_SD.shp:
 
 ### DATA
 
-## build/data/crosswalk-counties.csv             : Create a crosswalk file for counties
-build/data/crosswalk-counties.csv:
+## build/processed/%.csv                     : Data for districts
+build/processed/%.csv:
 	mkdir -p $(dir $@)
-	csvcut -c year,leaidC,countyid ./build/data/SEDA_crosswalk_v21.csv > $@
+	cat dictionaries/$*_dictionary.csv | \
+	python3 scripts/create_data_from_dictionary.py > $@
 
-## build/processed/counties.csv                  : Data for counties
-build/processed/counties.csv:
+build/processed/%-centers.csv: build/processed/%.csv
 	mkdir -p $(dir $@)
-	csvgrep -c subgroup -m all ./build/data/SEDA_county_pool_GCS_v21.csv | \
-	csvcut -c countyid,countyname,$(og_cols) | \
-	sed -e "1s/.*/GEOID,name,$(new_cols)/" > $@
-
-build/processed/counties-centers.csv: build/processed/counties.csv
-	mkdir -p $(dir $@)
-	csvcut -c GEOID,name $^ > $@
-
-## build/processed/districts.csv                     : Data for districts
-build/processed/districts.csv:
-	mkdir -p $(dir $@)
-	csvgrep -c subgroup -m all ./build/data/SEDA_geodist_pool_GCS_v21.csv | \
-	csvcut -c leaidC,leaname,$(og_cols) | \
-	sed -e "1s/.*/GEOID,name,$(new_cols)/" > $@
-
-build/processed/districts-centers.csv: build/processed/districts.csv
-	mkdir -p $(dir $@)
-	csvcut -c GEOID,name $^ > $@
+	csvcut -c id,name $^ > $@
