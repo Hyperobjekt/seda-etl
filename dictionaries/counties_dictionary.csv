@@ -1,7 +1,5 @@
 name,output_column,source_file,column,row_condition
 Identifier,id,SEDA_county_pool_GCS_v22.csv,countyid,
-Name,name,SEDA_county_pool_GCS_v22.csv,countyname,
-State Fips,s_fips,SEDA_county_pool_GCS_v22.csv,fipst,
 Identifier,id,SEDA_county_pool_GCS_v22.csv,countyid,subgroup == all
 Average test score,all_avg,SEDA_county_pool_GCS_v22.csv,mn_avg_eb,subgroup == all
 Growth in grades across years,all_grd,SEDA_county_pool_GCS_v22.csv,mn_grd_eb,subgroup == all

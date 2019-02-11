@@ -1,7 +1,5 @@
 name,output_column,source_file,column,row_condition
 Identifier,id,SEDA_cov_geodist_pool_v21.csv,leaidC,
-Name,name,SEDA_cov_geodist_pool_v21.csv,leaname,
-State Fips,s_fips,SEDA_cov_geodist_pool_v21.csv,fips,
 Standardized SES composite (all races),all_ses,SEDA_cov_geodist_pool_v21.csv,sesall,
 Standardized SES composite (white),w_ses,SEDA_cov_geodist_pool_v21.csv,seswht,
 Standardized SES composite (black),b_ses,SEDA_cov_geodist_pool_v21.csv,sesblk,
@@ -10,7 +8,6 @@ Information index between schools: White/Black,wb_seg,SEDA_cov_geodist_pool_v21.
 Information index between schools: White/Hispanic,wh_seg,SEDA_cov_geodist_pool_v21.csv,hswhthsp,
 Information index between schools: FRPL/No FRPL,frpl_seg,SEDA_cov_geodist_pool_v21.csv,hsflnfl,
 Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == all
-Name,name2,SEDA_geodist_pool_GCS_v22.csv,leanm,subgroup == all
 Average test score,all_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == all
 Growth in grades across years,all_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == all
 Trend in test scores across years,all_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == all

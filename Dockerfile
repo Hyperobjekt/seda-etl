@@ -33,7 +33,7 @@ RUN rm -rf /tmp/tippecanoe-src
 RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
     ln -s /usr/bin/nodejs /usr/bin/node && \
     apt-get -y install nodejs && \
-    npm install -g mapshaper@0.4.60 geojson-polygon-labels@1.2.1
+    npm install -g mapshaper@0.4.106 geojson-polygon-labels@1.2.1 csv2geojson
 
 WORKDIR /
 RUN git clone https://github.com/Hyperobjekt/seda-etl.git
@@ -41,5 +41,3 @@ WORKDIR /seda-etl/
 
 # Install Python packages
 RUN pip3 install pipenv && pipenv install
-
-ENTRYPOINT ["/seda-etl/run-task.sh"]

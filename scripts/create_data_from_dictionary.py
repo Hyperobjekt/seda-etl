@@ -89,4 +89,11 @@ if 'name2' in output_df.columns:
     lambda x: x[1] if pd.isnull(x[0]) else x[0], axis=1)
   output_df.drop(['name2'], axis=1, inplace=True)
 
+# if data set has coordinates, strip out rows missing them
+if 'lat' in output_df.columns:
+  output_df = output_df[pd.notnull(output_df['lat'])]
+
+# fill in missing numeric values
+output_df = output_df.fillna(-9999)
+
 output_df.to_csv(sys.stdout, index_label='id')

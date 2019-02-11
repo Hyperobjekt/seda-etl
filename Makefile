@@ -2,34 +2,25 @@
 census_ftp_base = ftp://ftp2.census.gov/geo/tiger/GENZ2010/
 
 counties-pattern = gz_*_*_050_*_500k.zip
-counties-geoid = "this.properties.GEOID = this.properties.STATE + this.properties.COUNTY"
+counties-geoid = "this.properties.id = this.properties.STATE + this.properties.COUNTY"
+counties-name = "this.properties.name = this.properties.NAME + ' ' + this.properties.LSAD"
+districts-geoid = "this.properties.id = this.properties.GEOID"
+districts-name = "this.properties.name = this.properties.NAME"
 
-geo_types = counties districts
+geo_types = counties districts schools
 geo_files = $(foreach t, $(geo_types), build/geography/$(t).geojson)
 
-tippecanoe_opts = --attribute-type=GEOID:string --simplification=10 --coalesce-densest-as-needed --maximum-zoom=12 --no-tile-stats --force
-tile_join_opts = --empty-csv-columns-are-null --force --no-tile-stats
+numeric_cols = all_ses w_ses b_ses h_ses wb_seg wh_seg frpl_seg all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh
+attr_types = --attribute-type=id:string $(foreach t, $(numeric_cols), --attribute-type=$(t):float)
 
-# min zoom to generate tiles for
-counties_min_zoom = 2
-districts_min_zoom = 2
-
-# max tile size for geography
-counties_bytes = 500000
-districts_bytes = 200000
-
-# column name mapping
-og_cols = mn_avg_ol,mn_grd_ol,mn_mth_ol
-new_cols = mn_ach,mn_slp,mn_diff
+tippecanoe_default_opts = --maximum-tile-bytes=500000 --minimum-zoom=2
+tippecanoe_poly_opts =  $(tippecanoe_default_opts) $(attr_types) -aI --simplification=10 --coalesce-densest-as-needed --maximum-zoom=12 --detect-shared-borders --no-tile-stats --force
+tippecanoe_point_opts = $(tippecanoe_default_opts) $(attr_types) -aI -zg --drop-densest-as-needed --no-tile-stats --force
 
 # For comma-delimited list
 null :=
 space := $(null) $(null)
 comma := ,
-
-# Assign layer properties based on minimum zoom
-$(foreach g, $(geo_types), $(eval $(g)_census_opts = --maximum-tile-bytes=$($g_bytes) --minimum-zoom=$($g_min_zoom) --detect-shared-borders))
-$(foreach g, $(geo_types), $(eval $(g)_centers_opts = --base-zoom=4))
 
 # Edit node commands to use additional memory
 mapshaper_cmd = node --max_old_space_size=4096 $$(which mapshaper)
@@ -46,63 +37,56 @@ deploy:
 
 ## clean                            : Remove files
 clean:
-	rm -rf build/geography build/tiles
+	rm -rf build/geography build/tiles build/processed
 
-### TILES
-
-## build/tiles/%.mbtiles                        : Convert geography GeoJSON to .mbtiles
-build/tiles/%.mbtiles: build/tiles/centers/%-data.mbtiles build/tiles/shapes/%-data.mbtiles
-	mkdir -p $(dir $@)
-	tile-join -n $* $(tile_join_opts) -o $@ $^
-
-## build/tiles/centers/%.mbtiles                : Center .mbtiles with flags for centers based on layer
-build/tiles/centers/%.mbtiles: build/geography/%-centers.geojson
-	mkdir -p $(dir $@)
-	tippecanoe -L $*-centers:$< $(tippecanoe_opts) $($*_centers_opts) -o $@
-
-build/tiles/centers/%-data.mbtiles: build/processed/%-centers.csv build/tiles/centers/%.mbtiles
-	mkdir -p $(dir $@)
-	tile-join -l $*-centers $(tile_join_opts) -o $@ -c $^
+### CHOROPLETH TILES
 
 ## build/tiles/shapes/%.mbtiles                 : Census .mbtiles with specific flags for census geography
-build/tiles/shapes/%.mbtiles: build/geography/%.geojson
+build/tiles/%.mbtiles: build/geography/%.geojson
 	mkdir -p $(dir $@)
-	tippecanoe -L $*:$< $(tippecanoe_opts) $($*_census_opts) -o $@
+	tippecanoe -L $*:$< $(tippecanoe_poly_opts) -o $@
 
-build/tiles/shapes/%-data.mbtiles: build/processed/%.csv build/tiles/shapes/%.mbtiles
+build/tiles/schools.mbtiles: build/geography/schools.geojson
 	mkdir -p $(dir $@)
-	tile-join -l $* $(tile_join_opts) -o $@ -c $^
+	tippecanoe -L schools:$< $(tippecanoe_point_opts) -o $@
+
 
 ### GEOJSON
 
-## build/geography/%-centers.geojson            : GeoJSON centers
-build/geography/%-centers.geojson: build/geography/%.geojson
-	mkdir -p $(dir $@)
-	$(geojson_label_cmd) --style largest $< > $@
-
 ## build/geography/counties.geojson             : Download and clean census GeoJSON
 .SECONDARY:
-build/geography/counties.geojson:
+build/geography/counties.geojson: build/processed/counties.csv
 	mkdir -p $(dir $@)
 	wget --no-use-server-timestamps -np -nd -r -P ./build/geography/counties -A '$(counties-pattern)' $(census_ftp_base)
 	for f in ./build/geography/counties/*.zip; do unzip -d ./build/geography/counties $$f; done
-	mapshaper ./build/geography/counties/*.shp combine-files \
+	mapshaper ./build/geography/counties/*.shp combine-files id-field=GEO_ID \
 		-each $(counties-geoid) \
-		-filter-fields GEOID \
-		-o $@ combine-layers format=geojson
+		-each $(counties-name) \
+		-filter-fields id,name \
+		-o - id-field=id combine-layers format=geojson | \
+	tippecanoe-json-tool -e id | \
+	LC_ALL=C sort | \
+	tippecanoe-json-tool -c build/processed/counties.csv > $@
 
 ## build/geography/districts.geojson             : Convert district shapefiles to geojson
-build/geography/districts.geojson: build/shp/2013_Unified_Elementary_SD.shp
+build/geography/districts.geojson: build/shp/2013_Unified_Elementary_SD.shp build/processed/districts.csv
 	mkdir -p $(dir $@)
-	mapshaper ./build/shp/*.shp combine-files \
-		-filter-fields GEOID,NAME \
-		-uniq GEOID \
-		-o $@ combine-layers format=geojson
+	mapshaper ./build/shp/*.shp combine-files id-field=GEOID \
+		-each $(districts-geoid) \
+		-each $(districts-name) \
+		-filter-fields id,name \
+		-uniq id \
+		-o - id-field=id combine-layers format=geojson | \
+	tippecanoe-json-tool -e id | \
+	LC_ALL=C sort | \
+	tippecanoe-json-tool -c build/processed/districts.csv > $@
+
 
 ## build/geography/schools.geojson               : Create GeoJSON for schools
-build/geography/schools.geojson:
+build/geography/schools.geojson: build/processed/schools.csv
 	mkdir -p $(dir $@)
-	echo "Not yet implemented"
+	csv2geojson --lat lat --lon lon $^ | \
+	mapshaper - id-field=id -o $@ id-field=id combine-layers format=geojson 
 
 build/shp/2013_Unified_Elementary_SD.shp:
 	unzip -d build/shp SEDA_shapefiles_v21.zip
@@ -115,6 +99,23 @@ build/processed/%.csv:
 	cat dictionaries/$*_dictionary.csv | \
 	python3 scripts/create_data_from_dictionary.py > $@
 
-build/processed/%-centers.csv: build/processed/%.csv
-	mkdir -p $(dir $@)
-	csvcut -c id,name $^ > $@
+
+### CENTERS TILES (for labels)
+
+# ## build/tiles/centers/%.mbtiles                : Center .mbtiles with flags for centers based on layer
+# build/tiles/centers/%.mbtiles: build/geography/%-centers.geojson
+# 	mkdir -p $(dir $@)
+# 	tippecanoe -L $*-centers:$< $(tippecanoe_point_opts) $($*_centers_opts) -o $@
+
+# build/tiles/centers/%-data.mbtiles: build/processed/%-centers.csv build/tiles/centers/%.mbtiles
+# 	mkdir -p $(dir $@)
+# 	tile-join -l $*-centers $(tile_join_opts) -o $@ -c $^
+
+# ## build/geography/%-centers.geojson            : GeoJSON centers
+# build/geography/%-centers.geojson: build/geography/%.geojson
+# 	mkdir -p $(dir $@)
+# 	$(geojson_label_cmd) --style largest $< > $@
+
+# build/processed/%-centers.csv: build/processed/%.csv
+# 	mkdir -p $(dir $@)
+# 	csvcut -c id,name $^ > $@
