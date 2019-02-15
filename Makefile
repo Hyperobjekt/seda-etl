@@ -28,6 +28,7 @@ geojson_label_cmd = node --max_old_space_size=4096 $$(which geojson-polygon-labe
 
 output_tiles = $(foreach t, $(geo_types), build/tiles/$(t).mbtiles)
 
+
 all: $(output_tiles)
 
 deploy:
@@ -38,6 +39,8 @@ deploy:
 ## clean                            : Remove files
 clean:
 	rm -rf build/geography build/tiles build/processed
+
+
 
 ### CHOROPLETH TILES
 
@@ -92,6 +95,56 @@ build/shp/2013_Unified_Elementary_SD.shp:
 	unzip -d build/shp SEDA_shapefiles_v21.zip
 
 ### DATA
+counties_id = countyid
+counties_extract_vars = sesall seswht sesblk seshsp sesdiff_whtblk sesdiff_whthsp diffexplch_blkwht diffexplch_hspwht diffexplch_flnfl hswhtblk hswhthsp hsflnfl
+counties_rename_vars = all_ses w_ses b_ses h_ses wb_ses wh_ses diffexplch_blkwht diffexplch_hspwht diffexplch_flnfl hswhtblk hswhthsp hsflnfl
+counties_file = build/data/counties_cov.csv
+
+districts_id = leaid
+districts_extract_vars = $(counties_extract_vars)
+districts_rename_vars = $(counties_rename_vars)
+districts_file = build/data/districts_cov.csv
+
+schools_id = ncessch
+schools_extract_vars = perflu perrlu perfrlu perwht perind perasn perhsp perblk
+schools_rename_vars = $(schools_extract_vars)
+schools_file = build/data/schools_cov.csv
+
+vars: $(foreach g,$(geo_types),$(foreach v,$($(g)_rename_vars),build/vars/$(g)/$(v).csv))
+build/vars/counties/%.csv: build/vars/counties.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$* $^ | \
+	awk -F, '{ printf "%05i,%.4f\n", $$1,$$2 }' | \
+	sed '1s/.*/id,$*/' > $@
+
+build/vars/districts/%.csv: build/vars/districts.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$* $^ | \
+	awk -F, '{ printf "%07i,%.4f\n", $$1,$$2 }' | \
+	sed '1s/.*/id,$*/' > $@
+
+build/vars/schools/%.csv: build/vars/schools.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$* $^ | \
+	awk -F, '{ printf "%12i,%.4f\n", $$1,$$2 }' | \
+	sed '1s/.*/id,$*/' > $@
+
+# Give columns new names
+# Should be able to refactor into single rule, but
+# $($*_extract_vars) was not working
+.INTERMEDIATE:
+build/vars/counties.csv:
+	mkdir -p $(dir $@)
+	csvcut -c $(counties_id),$(subst $(space),$(comma),$(strip $(counties_extract_vars))) $(counties_file) | \
+	sed '1s/.*/id,$(subst $(space),$(comma),$(strip $(counties_rename_vars)))/' > $@
+build/vars/districts.csv:
+	mkdir -p $(dir $@)
+	csvcut -c $(districts_id),$(subst $(space),$(comma),$(strip $(districts_extract_vars))) $(districts_file) | \
+	sed '1s/.*/id,$(subst $(space),$(comma),$(strip $(districts_rename_vars)))/' > $@
+build/vars/schools.csv:
+	mkdir -p $(dir $@)
+	csvcut -c $(schools_id),$(subst $(space),$(comma),$(strip $(schools_extract_vars))) $(schools_file) | \
+	sed '1s/.*/id,$(subst $(space),$(comma),$(strip $(schools_rename_vars)))/' > $@
 
 ## build/processed/%.csv                     : Data for districts
 build/processed/%.csv:
