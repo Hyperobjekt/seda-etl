@@ -141,6 +141,7 @@ build/vars2/counties/%.csv: build/processed/counties.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
 	awk -F, ' $$2 != "" { print $$0 } ' | \
+	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
 	awk -F, '{ printf "%05i,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$*/' > $@
 
@@ -148,6 +149,7 @@ build/vars2/districts/%.csv: build/processed/districts.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
 	awk -F, ' $$2 != "" { print $$0 } ' | \
+	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
 	awk -F, '{ printf "%07i,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$*/' > $@
 
@@ -155,6 +157,7 @@ build/vars2/schools/%.csv: build/processed/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
 	awk -F, ' $$2 != "" { print $$0 } ' | \
+	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
 	awk -F, '{ printf "%012s,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$*/' > $@
 
