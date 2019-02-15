@@ -114,18 +114,21 @@ vars: $(foreach g,$(geo_types),$(foreach v,$($(g)_rename_vars),build/vars/$(g)/$
 build/vars/counties/%.csv: build/vars/counties.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
+	awk -F, ' $$2 != "" { print $$0 } ' | \
 	awk -F, '{ printf "%05i,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$*/' > $@
 
 build/vars/districts/%.csv: build/vars/districts.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
+	awk -F, ' $$2 != "" { print $$0 } ' | \
 	awk -F, '{ printf "%07i,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$*/' > $@
 
 build/vars/schools/%.csv: build/vars/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
+	awk -F, ' $$2 != "" { print $$0 } ' | \
 	awk -F, '{ printf "%12i,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$*/' > $@
 
