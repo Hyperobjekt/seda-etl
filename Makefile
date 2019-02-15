@@ -69,7 +69,7 @@ build/geography/counties.geojson: build/processed/counties.csv
 		-o - id-field=id combine-layers format=geojson | \
 	tippecanoe-json-tool -e id | \
 	LC_ALL=C sort | \
-	tippecanoe-json-tool -c build/processed/counties.csv > $@
+	tippecanoe-json-tool -w -c build/processed/counties.csv > $@
 
 ## build/geography/districts.geojson             : Convert district shapefiles to geojson
 build/geography/districts.geojson: build/shp/2013_Unified_Elementary_SD.shp build/processed/districts.csv
@@ -82,7 +82,7 @@ build/geography/districts.geojson: build/shp/2013_Unified_Elementary_SD.shp buil
 		-o - id-field=id combine-layers format=geojson | \
 	tippecanoe-json-tool -e id | \
 	LC_ALL=C sort | \
-	tippecanoe-json-tool -c build/processed/districts.csv > $@
+	tippecanoe-json-tool -w -c build/processed/districts.csv > $@
 
 
 ## build/geography/schools.geojson               : Create GeoJSON for schools
@@ -184,6 +184,19 @@ build/processed/%.csv:
 	cat dictionaries/$*_dictionary.csv | \
 	python3 scripts/create_data_from_dictionary.py > $@
 
+counties_idlen = 5
+districts_idlen = 7
+
+build/search/locations.csv: build/search/counties.csv build/search/districts.csv
+	csvstack -g county,district $^ > $@
+
+build/search/%.csv: build/geography/%.geojson
+	mkdir -p $(dir $@)
+	$(geojson_label_cmd) --style largest $< | \
+	in2csv --format json -k features | \
+	csvcut -c properties/id,properties/name,geometry/coordinates/0,geometry/coordinates/1 | \
+	awk -F, '{ printf "%0$($*_idlen).0f,%s,%s,%s\n", $$1,$$2,$$3,$$4 }' | \
+	sed '1s/.*/id,name,lon,lat/' > $@
 
 ### CENTERS TILES (for labels)
 
