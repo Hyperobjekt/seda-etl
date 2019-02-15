@@ -100,6 +100,8 @@ counties_extract_vars = sesall seswht sesblk seshsp sesdiff_whtblk sesdiff_whths
 counties_rename_vars = all_ses w_ses b_ses h_ses wb_ses wh_ses diffexplch_blkwht diffexplch_hspwht diffexplch_flnfl hswhtblk hswhthsp hsflnfl
 counties_file = build/data/counties_cov.csv
 
+other_vars = all_avg all_grd all_coh
+
 districts_id = leaid
 districts_extract_vars = $(counties_extract_vars)
 districts_rename_vars = $(counties_rename_vars)
@@ -110,7 +112,10 @@ schools_extract_vars = perflu perrlu perfrlu perwht perind perasn perhsp perblk
 schools_rename_vars = $(schools_extract_vars)
 schools_file = build/data/schools_cov.csv
 
+vars2 = all_avg all_grd all_coh
+
 vars: $(foreach g,$(geo_types),$(foreach v,$($(g)_rename_vars),build/vars/$(g)/$(v).csv))
+vars2: $(foreach g,$(geo_types),$(foreach v,$(vars2),build/vars2/$(g)/$(v).csv))
 build/vars/counties/%.csv: build/vars/counties.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
@@ -129,7 +134,28 @@ build/vars/schools/%.csv: build/vars/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $^ | \
 	awk -F, ' $$2 != "" { print $$0 } ' | \
-	awk -F, '{ printf "%12i,%.4f\n", $$1,$$2 }' | \
+	awk -F, '{ printf "%012.0f,%.4f\n", $$1,$$2 }' | \
+	sed '1s/.*/id,$*/' > $@
+
+build/vars2/counties/%.csv: build/processed/counties.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$* $^ | \
+	awk -F, ' $$2 != "" { print $$0 } ' | \
+	awk -F, '{ printf "%05i,%.4f\n", $$1,$$2 }' | \
+	sed '1s/.*/id,$*/' > $@
+
+build/vars2/districts/%.csv: build/processed/districts.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$* $^ | \
+	awk -F, ' $$2 != "" { print $$0 } ' | \
+	awk -F, '{ printf "%07i,%.4f\n", $$1,$$2 }' | \
+	sed '1s/.*/id,$*/' > $@
+
+build/vars2/schools/%.csv: build/processed/schools.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$* $^ | \
+	awk -F, ' $$2 != "" { print $$0 } ' | \
+	awk -F, '{ printf "%012s,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$*/' > $@
 
 # Give columns new names
