@@ -13,26 +13,24 @@ if __name__ == '__main__':
   dict_df = pd.read_csv(
     sys.stdin, 
     keep_default_na=False, 
-    dtype={ 'row_condition' : 'object' })
+    dtype='object')
   
   # Get all of the files needed to generate the output
   files = dict_df.source_file.unique()
 
   data_df_list = [] 
   for f in files: 
+    dtypes_df = dict_df.loc[(dict_df['source_file'] == f)]
+    dtypes_dict = pd.Series(
+      dtypes_df['type'].values,index=dtypes_df['column']).to_dict()
     data_df_list.append(
       pd.read_csv(
         os.path.join(DATA_DIR, f),
-        dtype={ 
-          'leaidC': 'object', 
-          'ncessch': 'object',
-          'countyid': 'object',
-          'name': 'object' 
-        }
+        dtype=dtypes_dict
       )
     )
   
-  # Two types of files
+  # Two types of rows
 
   # A. Identifier is unique
   #     - pull the columns from the file
@@ -48,7 +46,7 @@ if __name__ == '__main__':
       output_a_df_list.append(values_df)
   output_a_df = pd.concat(output_a_df_list, axis=1)
 
-  # B. Identifier is not unique in the file
+  # B. Identifier is not unique in the file, so row condition is provided
   #    - loop through each file and get each data prop based on row condition
   output_b_df_list = []
   for i, df in enumerate(data_df_list):
