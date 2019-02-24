@@ -160,7 +160,8 @@ build/centers/schools.csv: build/processed/%.csv
 ### IDs file, pulled from the master data files.  Used for joins so we only
 ### use identifiers with associated education data.
 
-build/ids/%.csv:
+.SECONDEXPANSION:
+build/ids/%.csv: build/data/$$($$*_main)
 	mkdir -p $(dir $@)
 	csvcut -e windows-1251 -c $($*_id) build/data/$($*_main) | \
 	csvsort -c $($*_id) --no-inference | \
@@ -168,7 +169,6 @@ build/ids/%.csv:
 	sed '1s/.*/id/' > $@
 
 ### Fetch source data from S3 bucket
-	# aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$*.csv.gz - | \
 
 build/data/%.csv:
 	mkdir -p $(dir $@)

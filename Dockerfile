@@ -42,4 +42,6 @@ WORKDIR /seda-etl/
 # Install Python packages
 RUN pip3 install pipenv && pipenv install --system
 
+RUN chmod +x run-task.sh
+
 ENTRYPOINT ["/seda-etl/run-task.sh"]
