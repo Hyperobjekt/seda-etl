@@ -63,7 +63,7 @@ build/tiles/schools.mbtiles: build/geography/schools.geojson
 	tippecanoe -L schools:$< $(tippecanoe_point_opts) -o $@
 
 deploy_tilesets:
-	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$$(BUILD_ID); done
+	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(BUILD_ID); done
 
 
 ######
