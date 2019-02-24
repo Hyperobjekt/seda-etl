@@ -40,4 +40,6 @@ RUN git clone https://github.com/Hyperobjekt/seda-etl.git
 WORKDIR /seda-etl/
 
 # Install Python packages
-RUN pip3 install pipenv && pipenv install
+RUN pip3 install pipenv && pipenv install --system
+
+ENTRYPOINT ["/seda-etl/run-task.sh"]

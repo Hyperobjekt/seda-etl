@@ -1,5 +1,6 @@
 build
 seda_data
-.env
+.env.local
 *.zip
 .vscode
+node_modules

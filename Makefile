@@ -1,50 +1,59 @@
-# Makefile for creating Census geography data for 2010 from source rather than S3
-census_ftp_base = ftp://ftp2.census.gov/geo/tiger/GENZ2010/
-
-counties-pattern = gz_*_*_050_*_500k.zip
-counties-geoid = "this.properties.id = this.properties.STATE + this.properties.COUNTY"
-counties-name = "this.properties.name = this.properties.NAME + ' ' + this.properties.LSAD"
-districts-geoid = "this.properties.id = this.properties.GEOID"
-districts-name = "this.properties.name = this.properties.NAME"
-
 geo_types = counties districts schools
-geo_files = $(foreach t, $(geo_types), build/geography/$(t).geojson)
 
-numeric_cols = all_ses w_ses b_ses h_ses wb_seg wh_seg frpl_seg all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh
-attr_types = --attribute-type=id:string $(foreach t, $(numeric_cols), --attribute-type=$(t):float)
+# id field names for various regions
+counties_id = countyid
+districts_id = leaidC
+schools_id = ncessch
 
-tippecanoe_default_opts = --maximum-tile-bytes=500000 --minimum-zoom=2
-tippecanoe_poly_opts =  $(tippecanoe_default_opts) $(attr_types) -aI --simplification=10 --coalesce-densest-as-needed --maximum-zoom=12 --detect-shared-borders --no-tile-stats --force
-tippecanoe_point_opts = $(tippecanoe_default_opts) $(attr_types) -aI -zg --drop-densest-as-needed --no-tile-stats --force
+# master data file names
+counties_main = SEDA_county_pool_GCS_v22.csv
+districts_main = SEDA_geodist_pool_GCS_v22.csv
+schools_main = SEDA_school_pool_GCS_v30_latlong.csv
+
+# variables to pull into individual files
+counties_vars = all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh all_ses w_ses b_ses h_ses wb_ses wh_ses wb_seg wh_seg frpl_seg
+districts_vars = $(counties_vars)
+schools_vars = fl_pct rl_pct frl_pct w_pct i_pct a_pct h_pct b_pct
+
+# length of id used for each region type id
+counties_idlen = 5
+districts_idlen = 7
+schools_idlen = 12
+
+# use this build ID if one is not set in the environment variables
+BUILD_ID?=dev
 
 # For comma-delimited list
 null :=
 space := $(null) $(null)
 comma := ,
 
-# Edit node commands to use additional memory
-mapshaper_cmd = node --max_old_space_size=4096 $$(which mapshaper)
-geojson_label_cmd = node --max_old_space_size=4096 $$(which geojson-polygon-labels)
+.PHONY: tiles data search vars geojson deploy_search deploy_tilesets deploy_vars deploy_all
 
-output_tiles = $(foreach t, $(geo_types), build/tiles/$(t).mbtiles)
+all: tiles data vars search
 
-
-all: $(output_tiles)
-
-deploy:
-	mkdir -p build/tilesets
-	for f in build/tiles/*.mbtiles; do tile-join --no-tile-size-limit --force -e ./build/tilesets/$$(basename "$${f%.*}") $$f; done
-	aws s3 cp ./build/tilesets s3://$(S3_TILESETS_BUCKET)/$(BUILD_ID) --recursive --acl=public-read --content-encoding=gzip --region=us-east-2 --cache-control max-age=2628000
+deploy_all: deploy_search deploy_tilesets deploy_vars
 
 ## clean                            : Remove files
 clean:
-	rm -rf build/geography build/tiles build/processed
+	rm -rf build
 
-
-
+######
 ### CHOROPLETH TILES
+######
+### `make tiles`
+### Creates the .mbtiles files for the tilesets, populated with data
+######
 
-## build/tiles/shapes/%.mbtiles                 : Census .mbtiles with specific flags for census geography
+numeric_cols = $(counties_vars) $(schools_vars)
+attr_types = --attribute-type=id:string $(foreach t, $(numeric_cols), --attribute-type=$(t):float)
+
+tippecanoe_default_opts = --maximum-tile-bytes=500000 --minimum-zoom=2
+tippecanoe_poly_opts =  $(tippecanoe_default_opts) $(attr_types) --use-attribute-for-id=fid --simplification=10 --coalesce-densest-as-needed --maximum-zoom=12 --detect-shared-borders --no-tile-stats --force
+tippecanoe_point_opts = $(tippecanoe_default_opts) $(attr_types) --generate-ids -zg --drop-densest-as-needed --extend-zooms-if-still-dropping --no-tile-stats --force
+
+tiles: $(foreach t, $(geo_types), build/tiles/$(t).mbtiles)
+
 build/tiles/%.mbtiles: build/geography/%.geojson
 	mkdir -p $(dir $@)
 	tippecanoe -L $*:$< $(tippecanoe_poly_opts) -o $@
@@ -53,144 +62,90 @@ build/tiles/schools.mbtiles: build/geography/schools.geojson
 	mkdir -p $(dir $@)
 	tippecanoe -L schools:$< $(tippecanoe_point_opts) -o $@
 
+deploy_tilesets:
+	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$$(BUILD_ID); done
 
+
+######
 ### GEOJSON
+######
+### `make geojson`
+### Creates GeoJSON containing all of the data that is used in tilesets.
+######
 
-## build/geography/counties.geojson             : Download and clean census GeoJSON
-.SECONDARY:
+census_ftp_base = ftp://ftp2.census.gov/geo/tiger/GENZ2010/
+counties-pattern = gz_*_*_050_*_500k.zip
+counties-geoid = "this.properties.id = this.properties.STATE + this.properties.COUNTY"
+counties-name = "this.properties.name = this.properties.NAME + ' ' + this.properties.LSAD"
+districts-geoid = "this.properties.id = this.properties.GEOID"
+districts-name = "this.properties.name = this.properties.NAME"
+
+geojson: $(foreach t, $(geo_types), build/geography/$(t).geojson)
+
 build/geography/counties.geojson: build/processed/counties.csv
 	mkdir -p $(dir $@)
 	wget --no-use-server-timestamps -np -nd -r -P ./build/geography/counties -A '$(counties-pattern)' $(census_ftp_base)
 	for f in ./build/geography/counties/*.zip; do unzip -d ./build/geography/counties $$f; done
-	mapshaper ./build/geography/counties/*.shp combine-files id-field=GEO_ID \
+	mapshaper ./build/geography/counties/*.shp combine-files \
 		-each $(counties-geoid) \
 		-each $(counties-name) \
 		-filter-fields id,name \
-		-o - id-field=id combine-layers format=geojson | \
+		-o - combine-layers format=geojson | \
 	tippecanoe-json-tool -e id | \
 	LC_ALL=C sort | \
-	tippecanoe-json-tool -w -c build/processed/counties.csv > $@
+	tippecanoe-json-tool -w -c $< > $@
 
-## build/geography/districts.geojson             : Convert district shapefiles to geojson
-build/geography/districts.geojson: build/shp/2013_Unified_Elementary_SD.shp build/processed/districts.csv
+build/geography/districts.geojson: build/processed/districts.csv
 	mkdir -p $(dir $@)
-	mapshaper ./build/shp/*.shp combine-files id-field=GEOID \
+	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/SEDA_shapefiles_v21.zip ./build
+	unzip -d build/shp ./build/SEDA_shapefiles_v21.zip
+	mapshaper ./build/shp/*.shp combine-files \
 		-each $(districts-geoid) \
 		-each $(districts-name) \
 		-filter-fields id,name \
 		-uniq id \
-		-o - id-field=id combine-layers format=geojson | \
+		-o - combine-layers format=geojson | \
 	tippecanoe-json-tool -e id | \
 	LC_ALL=C sort | \
-	tippecanoe-json-tool -w -c build/processed/districts.csv > $@
+	tippecanoe-json-tool -w -c $< > $@
 
-
-## build/geography/schools.geojson               : Create GeoJSON for schools
 build/geography/schools.geojson: build/processed/schools.csv
 	mkdir -p $(dir $@)
 	csv2geojson --lat lat --lon lon $^ | \
-	mapshaper - id-field=id -o $@ id-field=id combine-layers format=geojson 
+	mapshaper - -o $@ combine-layers format=geojson 
 
-build/shp/2013_Unified_Elementary_SD.shp:
-	unzip -d build/shp SEDA_shapefiles_v21.zip
-
+######
 ### DATA
-counties_id = countyid
-counties_extract_vars = sesall seswht sesblk seshsp sesdiff_whtblk sesdiff_whthsp diffexplch_blkwht diffexplch_hspwht diffexplch_flnfl hswhtblk hswhthsp hsflnfl
-counties_rename_vars = all_ses w_ses b_ses h_ses wb_ses wh_ses diffexplch_blkwht diffexplch_hspwht diffexplch_flnfl hswhtblk hswhthsp hsflnfl
-counties_file = build/data/counties_cov.csv
+######
+### `make data`
+### build master data files containing all data for each region type.
+######
 
-other_vars = all_avg all_grd all_coh
+geojson_label_cmd = node --max_old_space_size=4096 $$(which geojson-polygon-labels)
 
-districts_id = leaid
-districts_extract_vars = $(counties_extract_vars)
-districts_rename_vars = $(counties_rename_vars)
-districts_file = build/data/districts_cov.csv
+data: $(foreach t, $(geo_types), build/$(t).csv)
 
-schools_id = ncessch
-schools_extract_vars = perflu perrlu perfrlu perwht perind perasn perhsp perblk
-schools_rename_vars = $(schools_extract_vars)
-schools_file = build/data/schools_cov.csv
-
-vars2 = all_avg all_grd all_coh
-
-vars: $(foreach g,$(geo_types),$(foreach v,$($(g)_rename_vars),build/vars/$(g)/$(v).csv))
-vars2: $(foreach g,$(geo_types),$(foreach v,$(vars2),build/vars2/$(g)/$(v).csv))
-build/vars/counties/%.csv: build/vars/counties.csv
+build/%.csv: build/ids/%.csv build/centers/%.csv build/processed/%.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$* $^ | \
-	awk -F, ' $$2 != "" { print $$0 } ' | \
-	awk -F, '{ printf "%05i,%.4f\n", $$1,$$2 }' | \
-	sed '1s/.*/id,$*/' > $@
+	csvjoin -c id --left --no-inference $^ > $@
 
-build/vars/districts/%.csv: build/vars/districts.csv
+build/schools.csv: build/processed/schools.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$* $^ | \
-	awk -F, ' $$2 != "" { print $$0 } ' | \
-	awk -F, '{ printf "%07i,%.4f\n", $$1,$$2 }' | \
-	sed '1s/.*/id,$*/' > $@
+	cp $< $@
 
-build/vars/schools/%.csv: build/vars/schools.csv
-	mkdir -p $(dir $@)
-	csvcut -c id,$* $^ | \
-	awk -F, ' $$2 != "" { print $$0 } ' | \
-	awk -F, '{ printf "%012.0f,%.4f\n", $$1,$$2 }' | \
-	sed '1s/.*/id,$*/' > $@
+## Processed data, where all variables defined in the dictionary file
+## are extracted from their associated files.
 
-build/vars2/counties/%.csv: build/processed/counties.csv
-	mkdir -p $(dir $@)
-	csvcut -c id,$* $^ | \
-	awk -F, ' $$2 != "" { print $$0 } ' | \
-	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
-	awk -F, '{ printf "%05i,%.4f\n", $$1,$$2 }' | \
-	sed '1s/.*/id,$*/' > $@
-
-build/vars2/districts/%.csv: build/processed/districts.csv
-	mkdir -p $(dir $@)
-	csvcut -c id,$* $^ | \
-	awk -F, ' $$2 != "" { print $$0 } ' | \
-	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
-	awk -F, '{ printf "%07i,%.4f\n", $$1,$$2 }' | \
-	sed '1s/.*/id,$*/' > $@
-
-build/vars2/schools/%.csv: build/processed/schools.csv
-	mkdir -p $(dir $@)
-	csvcut -c id,$* $^ | \
-	awk -F, ' $$2 != "" { print $$0 } ' | \
-	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
-	awk -F, '{ printf "%012s,%.4f\n", $$1,$$2 }' | \
-	sed '1s/.*/id,$*/' > $@
-
-# Give columns new names
-# Should be able to refactor into single rule, but
-# $($*_extract_vars) was not working
-.INTERMEDIATE:
-build/vars/counties.csv:
-	mkdir -p $(dir $@)
-	csvcut -c $(counties_id),$(subst $(space),$(comma),$(strip $(counties_extract_vars))) $(counties_file) | \
-	sed '1s/.*/id,$(subst $(space),$(comma),$(strip $(counties_rename_vars)))/' > $@
-build/vars/districts.csv:
-	mkdir -p $(dir $@)
-	csvcut -c $(districts_id),$(subst $(space),$(comma),$(strip $(districts_extract_vars))) $(districts_file) | \
-	sed '1s/.*/id,$(subst $(space),$(comma),$(strip $(districts_rename_vars)))/' > $@
-build/vars/schools.csv:
-	mkdir -p $(dir $@)
-	csvcut -c $(schools_id),$(subst $(space),$(comma),$(strip $(schools_extract_vars))) $(schools_file) | \
-	sed '1s/.*/id,$(subst $(space),$(comma),$(strip $(schools_rename_vars)))/' > $@
-
-## build/processed/%.csv                     : Data for districts
-build/processed/%.csv:
+.SECONDEXPANSION:
+build/processed/%.csv: build/data/$$*_cov.csv build/data/$$($$*_main)
 	mkdir -p $(dir $@)
 	cat dictionaries/$*_dictionary.csv | \
 	python3 scripts/create_data_from_dictionary.py > $@
 
-counties_idlen = 5
-districts_idlen = 7
+### Centers data to create a lat/lon point associated with each feature
+### with and accompanying name
 
-build/search/locations.csv: build/search/counties.csv build/search/districts.csv
-	csvstack -g county,district $^ > $@
-
-build/search/%.csv: build/geography/%.geojson
+build/centers/%.csv: build/geography/%.geojson
 	mkdir -p $(dir $@)
 	$(geojson_label_cmd) --style largest $< | \
 	in2csv --format json -k features | \
@@ -198,22 +153,76 @@ build/search/%.csv: build/geography/%.geojson
 	awk -F, '{ printf "%0$($*_idlen).0f,%s,%s,%s\n", $$1,$$2,$$3,$$4 }' | \
 	sed '1s/.*/id,name,lon,lat/' > $@
 
-### CENTERS TILES (for labels)
+build/centers/schools.csv: build/processed/%.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,name,lat,lon $< > $@
 
-# ## build/tiles/centers/%.mbtiles                : Center .mbtiles with flags for centers based on layer
-# build/tiles/centers/%.mbtiles: build/geography/%-centers.geojson
-# 	mkdir -p $(dir $@)
-# 	tippecanoe -L $*-centers:$< $(tippecanoe_point_opts) $($*_centers_opts) -o $@
+### IDs file, pulled from the master data files.  Used for joins so we only
+### use identifiers with associated education data.
 
-# build/tiles/centers/%-data.mbtiles: build/processed/%-centers.csv build/tiles/centers/%.mbtiles
-# 	mkdir -p $(dir $@)
-# 	tile-join -l $*-centers $(tile_join_opts) -o $@ -c $^
+build/ids/%.csv:
+	mkdir -p $(dir $@)
+	csvcut -e windows-1251 -c $($*_id) build/data/$($*_main) | \
+	csvsort -c $($*_id) --no-inference | \
+	uniq | \
+	sed '1s/.*/id/' > $@
 
-# ## build/geography/%-centers.geojson            : GeoJSON centers
-# build/geography/%-centers.geojson: build/geography/%.geojson
-# 	mkdir -p $(dir $@)
-# 	$(geojson_label_cmd) --style largest $< > $@
+### Fetch source data from S3 bucket
+	# aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$*.csv.gz - | \
 
-# build/processed/%-centers.csv: build/processed/%.csv
-# 	mkdir -p $(dir $@)
-# 	csvcut -c id,name $^ > $@
+build/data/%.csv:
+	mkdir -p $(dir $@)
+	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$*.csv.gz | \
+	gunzip -c - > $@
+
+######
+### INDIVIDUAL VARIABLES
+######
+### `make vars`
+### Takes each of the variables for each region (e.g. counties_vars)
+### and generate csv files mapping id : variable value.  These files
+### are used for scatterplots.  Each variable is loaded as needed.
+######
+
+vars: $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/vars/$(g)-$(v).csv))
+
+.SECONDEXPANSION:
+build/vars/%.csv: build/processed/$$(subst -$$(lastword $$(subst -, ,$$*)),,$$*).csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$(lastword $(subst -, ,$*)) $^ | \
+	awk -F, ' $$2 != "" { print $$0 } ' | \
+	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
+	awk -F, '{ printf "%0$($(subst -$(lastword $(subst -, ,$*)),,$*)_idlen)i,%.4f\n", $$1,$$2 }' | \
+	sed '1s/.*/id,$(lastword $(subst -, ,$*))/' > $@
+
+deploy_vars:
+	aws s3 cp ./build/vars s3://$(DATA_BUCKET)/build/$(BUILD_ID)/vars \ 
+		--recursive \ 
+		--acl=public-read \
+		--content-encoding=gzip \
+		--region=us-east-1 \ 
+		--cache-control max-age=2628000
+
+######
+### SEARCH
+######
+### Generated search file contains all counties, districts, and schools
+### with their name, latitude, longitude, and three key metrics.
+### The search file is deployed to Algolia for indexing.
+######
+
+search_cols = id,name,lat,lon,all_avg,all_grd,all_coh
+
+search: build/search.csv
+
+build/search.csv: $(foreach t, $(geo_types), build/search/$(t).csv)
+	csvstack -g counties,districts,schools $^  > $@
+
+build/search/%.csv: build/%.csv
+	mkdir -p $(dir $@)
+	csvcut -c $(search_cols) $< > $@
+
+deploy_search:
+	python3 scripts/deploy_search.py ./build/search.csv
+
+

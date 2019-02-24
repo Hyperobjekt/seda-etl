@@ -19,14 +19,28 @@ if __name__ == '__main__':
   files = dict_df.source_file.unique()
 
   data_df_list = [] 
-  for f in files: 
-    dtypes_df = dict_df.loc[(dict_df['source_file'] == f)]
-    dtypes_dict = pd.Series(
-      dtypes_df['type'].values,index=dtypes_df['column']).to_dict()
+  for f in files:
+    # get input data types
+    if 'type' in dict_df.columns:
+      dtypes_df = dict_df.loc[
+        (dict_df['source_file'] == f) & (dict_df['type'] != '')
+      ]
+      dtypes_dict = pd.Series(
+        dtypes_df['type'].values,index=dtypes_df['column']).to_dict()
+    else:
+      dtypes_dict = {}
+    # load csv, make sure identifiers are proper length 
     data_df_list.append(
       pd.read_csv(
         os.path.join(DATA_DIR, f),
-        dtype=dtypes_dict
+        encoding='windows-1251',
+        dtype=dtypes_dict,
+        converters={
+          'countyid': '{:0>5}'.format,
+          'leaid': '{:0>7}'.format,
+          'leaidC': '{:0>7}'.format,
+          'ncessch': '{:0>12}'.format
+        }
       )
     )
   
@@ -93,5 +107,7 @@ if 'lat' in output_df.columns:
 
 # fill in missing numeric values
 output_df = output_df.fillna(-9999)
-
+output_df = output_df.reset_index()
+output_df[['fid']] = output_df[['index']].apply(pd.to_numeric)
+output_df.set_index('index', inplace=True)
 output_df.to_csv(sys.stdout, index_label='id')
