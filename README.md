@@ -7,33 +7,27 @@ Creates tilesets and data used for the SEDA project
 Clone this repository then use docker to build the image that is used for all tasks.
 
 ```
-$: docker build . -t hyperobjekt/seda-etl
+$: docker pull hyperobjekt/seda-etl
 ```
 
-Once the image is built, launch it into a shell and run any of the make targets specified below.
-
-> Note: You must enter values for the variables in the `.env` file.  Copy the `.env` file to `.env.local`, enter values for the variables, and then specify the env file when running docker.
-
-```
-$: docker run -it 
-    --volume ${PWD}:/App \
-    --workdir="/App" \ 
-    --env-file .env.local \ 
-    --entrypoint /bin/bash \
-    hyperobjekt/seda-etl
-```
-
-If performing any AWS related tasks, run the config task to configure aws-cli with the credentials from your `.env.local` file.
-
-```
-$: ./run-task.sh config
-```
+Once the image is built you can run any of the pipeline tasks outlined below.
 
 ## Pipeline Tasks
 
-Use the`./run-task.sh` script to run any of the pipeline tasks. (e.g. `./run-task.sh all`)
+Use the `./run-task.sh` script via the docker image to run tasks:
 
-The following make targets are available:
+```
+$: docker run
+    --volume ${PWD}:/App \
+    --workdir="/App" \ 
+    --env-file .env.local \ 
+    --entrypoint /App/run-task.sh \
+    hyperobjekt/seda-etl {TASK_NAME}
+```
+
+> Note: You must enter values for the variables in the `.env` file.  Copy the `.env` file to `.env.local`, enter values for the variables, and then specify the env file when running docker.
+
+The following tasks are available:
 
   - `all`: make all of the targets listed below
   - `tiles`: creates tilesets for each region in `./build/tiles`
