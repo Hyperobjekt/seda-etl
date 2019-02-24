@@ -33,6 +33,7 @@ The following tasks are available:
   - `tiles`: creates tilesets for each region in `./build/tiles`
   - `geojson`: creates GeoJSON files for schools, districts, counties in `./build/geography`
   - `data`: creates master data files for schools, districts, counties in `./build`
+  - `vars`: segments master csv files into individual variable csv files that are used for the scatterplot
   - `search`: creates data for search in `./build/search.csv` 
   - `deploy_tiles`: deploys tiles to mapbox
   - `deploy_search`: deploys search data to Algolia index
