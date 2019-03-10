@@ -11,6 +11,7 @@ float64,Information index between schools: White/Black,wb_seg,counties_cov.csv,h
 float64,Information index between schools: White/Hispanic,wh_seg,counties_cov.csv,hswhthsp,
 float64,Information index between schools: FRPL/No FRPL,frpl_seg,counties_cov.csv,hsflnfl,
 ,Identifier,id,SEDA_county_pool_GCS_v22.csv,countyid,subgroup == all
+float64,County Size,sz,SEDA_county_pool_GCS_v22.csv,mn_asmts,subgroup == all
 float64,Average test score,all_avg,SEDA_county_pool_GCS_v22.csv,mn_avg_eb,subgroup == all
 float64,Growth in grades across years,all_grd,SEDA_county_pool_GCS_v22.csv,mn_grd_eb,subgroup == all
 float64,Trend in test scores across years,all_coh,SEDA_county_pool_GCS_v22.csv,mn_coh_eb,subgroup == all

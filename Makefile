@@ -11,7 +11,7 @@ districts_main = SEDA_geodist_pool_GCS_v22.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong.csv
 
 # variables to pull into individual files
-counties_vars = all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh all_ses w_ses b_ses h_ses wb_ses wh_ses wb_seg wh_seg frpl_seg
+counties_vars = sz all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh all_ses w_ses b_ses h_ses wb_ses wh_ses wb_seg wh_seg frpl_seg
 districts_vars = $(counties_vars)
 schools_vars = fl_pct rl_pct frl_pct w_pct i_pct a_pct h_pct b_pct
 
@@ -97,13 +97,12 @@ build/geography/counties.geojson: build/processed/counties.csv
 
 build/geography/districts.geojson: build/processed/districts.csv
 	mkdir -p $(dir $@)
-	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/SEDA_shapefiles_v21.zip ./build
-	unzip -d build/shp ./build/SEDA_shapefiles_v21.zip
-	mapshaper ./build/shp/*.shp combine-files \
+	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/districts.geojson.gz | \
+	gunzip -c - | \
+	mapshaper - \
 		-each $(districts-geoid) \
 		-each $(districts-name) \
 		-filter-fields id,name \
-		-uniq id \
 		-o - combine-layers format=geojson | \
 	tippecanoe-json-tool -e id | \
 	LC_ALL=C sort | \
@@ -127,7 +126,8 @@ data: $(foreach t, $(geo_types), build/$(t).csv)
 
 build/%.csv: build/ids/%.csv build/centers/%.csv build/processed/%.csv
 	mkdir -p $(dir $@)
-	csvjoin -c id --left --no-inference $^ > $@
+	csvjoin -c id --left --no-inference $^ | \
+
 
 build/schools.csv: build/processed/schools.csv
 	mkdir -p $(dir $@)
@@ -176,18 +176,42 @@ build/data/%.csv:
 	gunzip -c - > $@
 
 ######
-### INDIVIDUAL VARIABLES
+### SCATTERPLOT
 ######
-### `make vars`
+### `make scatterplot`
 ### Takes each of the variables for each region (e.g. counties_vars)
 ### and generate csv files mapping id : variable value.  These files
 ### are used for scatterplots.  Each variable is loaded as needed.
+### Also creates a base file to use on initial load, with names, lat, lon, etc.
 ######
 
-vars: $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/vars/$(g)-$(v).csv))
+# variables to pull into individual files
+counties_scatter = id,name,lat,lon,all_avg,all_ses,sz
+districts_scatter = $(counties_scatter)
+schools_scatter = id,name,lat,lon,all_avg,frl_pct
+
+scatterplot: $(foreach t, $(geo_types), build/scatterplot/$(t)-base.csv) $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)-$(v).csv))
+
+build/scatterplot/%-base.csv: build/%.csv
+	mkdir -p $(dir $@)
+	cat $< | \
+	csvcut -c $($*_scatter) | \
+	csvgrep -c name -i -r '^$$' | \
+	awk -F, '{ printf "%s,%s,%.4f,%.4f,%.4f,%.4f,%.4f\n", $$1,$$2,$$3,$$4,$$5,$$6,$$7 }' | \
+	sed --expression='s/-9999.0//g' | \
+	sed '1s/.*/$($*_scatter)/' > $@
+
+build/scatterplot/schools-base.csv: build/schools.csv
+	mkdir -p $(dir $@)
+	cat $< | \
+	csvcut -c $(schools_scatter) | \
+	csvgrep -c name -i -r '^$$' | \
+	awk -F, '{ printf "%s,%s,%.4f,%.4f,%.4f,%.4f\n", $$1,$$2,$$3,$$4,$$5,$$6 }' | \
+	sed --expression='s/-9999.0//g' | \
+	sed '1s/.*/$(schools_scatter)/' > $@
 
 .SECONDEXPANSION:
-build/vars/%.csv: build/processed/$$(subst -$$(lastword $$(subst -, ,$$*)),,$$*).csv
+build/scatterplot/%.csv: build/processed/$$(subst -$$(lastword $$(subst -, ,$$*)),,$$*).csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$(lastword $(subst -, ,$*)) $^ | \
 	awk -F, ' $$2 != "" { print $$0 } ' | \
@@ -195,12 +219,11 @@ build/vars/%.csv: build/processed/$$(subst -$$(lastword $$(subst -, ,$$*)),,$$*)
 	awk -F, '{ printf "%0$($(subst -$(lastword $(subst -, ,$*)),,$*)_idlen)i,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$(lastword $(subst -, ,$*))/' > $@
 
-deploy_vars:
-	aws s3 cp ./build/vars s3://$(DATA_BUCKET)/build/$(BUILD_ID)/vars \ 
-		--recursive \ 
+deploy_scatterplot:
+	aws s3 cp ./build/vars s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
+		--recursive \
 		--acl=public-read \
-		--content-encoding=gzip \
-		--region=us-east-1 \ 
+		--region=us-east-1 \
 		--cache-control max-age=2628000
 
 ######
