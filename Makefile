@@ -126,7 +126,7 @@ data: $(foreach t, $(geo_types), build/$(t).csv)
 
 build/%.csv: build/ids/%.csv build/centers/%.csv build/processed/%.csv
 	mkdir -p $(dir $@)
-	csvjoin -c id --left --no-inference $^ | \
+	csvjoin -c id --left --no-inference $^ > $@
 
 
 build/schools.csv: build/processed/schools.csv
@@ -220,7 +220,7 @@ build/scatterplot/%.csv: build/processed/$$(subst -$$(lastword $$(subst -, ,$$*)
 	sed '1s/.*/id,$(lastword $(subst -, ,$*))/' > $@
 
 deploy_scatterplot:
-	aws s3 cp ./build/vars s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
+	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
 		--recursive \
 		--acl=public-read \
 		--region=us-east-1 \
