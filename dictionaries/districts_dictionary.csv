@@ -9,60 +9,60 @@ float64,Socioeconomic difference - white/hispanic,wh_ses,districts_cov.csv,sesdi
 float64,Information index between schools: White/Black,wb_seg,districts_cov.csv,hswhtblk,
 float64,Information index between schools: White/Hispanic,wh_seg,districts_cov.csv,hswhthsp,
 float64,Information index between schools: FRPL/No FRPL,frpl_seg,districts_cov.csv,hsflnfl,
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == all
-float64,District Size,sz,SEDA_geodist_pool_GCS_v22.csv,mn_asmts,subgroup == all
-float64,Average test score,all_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == all
-float64,Growth in grades across years,all_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == all
-float64,Trend in test scores across years,all_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == all
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == wht
-float64,White average test score,w_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == wht
-float64,White growth in grades,w_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == wht
-float64,White trend in test scores,w_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == wht
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == blk
-float64,Black average test score,b_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == blk
-float64,Black growth in grades,b_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == blk
-float64,Black trend in test scores,b_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == blk
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == hsp
-float64,Hispanic average test score,h_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == hsp
-float64,Hispanic growth in grades,h_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == hsp
-float64,Hispanic trend in test scores,h_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == hsp
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == asn
-float64,Asian average test score,a_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == asn
-float64,Asian growth in grades,a_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == asn
-float64,Asian trend in test scores,a_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == asn
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == mal
-float64,Male average test score,m_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == mal
-float64,Male growth in grades,m_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == mal
-float64,Male trend in test scores,m_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == mal
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == fem
-float64,Female average test score,f_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == fem
-float64,Female growth in grades,f_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == fem
-float64,Female trend in test scores,f_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == fem
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == ecd
-float64,Poor average test score,p_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == ecd
-float64,Poor growth in grades,p_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == ecd
-float64,Poor trend in test scores,p_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == ecd
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == nec
-float64,Non-poor average test score,np_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == nec
-float64,Non-poor growth in grades,np_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == nec
-float64,Non-poor trend in test scores,np_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == nec
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == wag
-float64,White / Asian Gap average test score,wa_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == wag
-float64,White / Asian Gap growth in grades,wa_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == wag
-float64,White / Asian Gap trend in test scores,wa_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == wag
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == wbg
-float64,White / Black Gap average test score,wb_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == wbg
-float64,White / Black Gap growth in grades,wb_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == wbg
-float64,White / Black Gap trend in test scores,wb_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == wbg
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == whg
-float64,White / Hispanic Gap average test score,wh_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == whg
-float64,White / Hispanic Gap growth in grades,wh_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == whg
-float64,White / Hispanic Gap trend in test scores,wh_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == whg
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == mfg
-float64,Male / Female Gap average test score,mf_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == mfg
-float64,Male / Female Gap growth in grades,mf_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == mfg
-float64,Male / Female Gap trend in test scores,mf_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == mfg
-,Identifier,id,SEDA_geodist_pool_GCS_v22.csv,leaidC,subgroup == neg
-float64,Poor / Nonpoor Gap,pn_avg,SEDA_geodist_pool_GCS_v22.csv,mn_avg_eb,subgroup == neg
-float64,Poor / Nonpoor Gap,pn_grd,SEDA_geodist_pool_GCS_v22.csv,mn_grd_eb,subgroup == neg
-float64,Poor / Nonpoor Gap,pn_coh,SEDA_geodist_pool_GCS_v22.csv,mn_coh_eb,subgroup == neg
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == all
+float64,District Size,sz,SEDA_geodist_pool_GCS_v30.csv,mn_asmts,subgroup == all
+float64,Average test score,all_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == all
+float64,Growth in grades across years,all_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == all
+float64,Trend in test scores across years,all_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == all
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == wht
+float64,White average test score,w_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == wht
+float64,White growth in grades,w_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == wht
+float64,White trend in test scores,w_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == wht
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == blk
+float64,Black average test score,b_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == blk
+float64,Black growth in grades,b_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == blk
+float64,Black trend in test scores,b_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == blk
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == hsp
+float64,Hispanic average test score,h_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == hsp
+float64,Hispanic growth in grades,h_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == hsp
+float64,Hispanic trend in test scores,h_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == hsp
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == asn
+float64,Asian average test score,a_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == asn
+float64,Asian growth in grades,a_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == asn
+float64,Asian trend in test scores,a_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == asn
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == mal
+float64,Male average test score,m_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == mal
+float64,Male growth in grades,m_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == mal
+float64,Male trend in test scores,m_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == mal
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == fem
+float64,Female average test score,f_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == fem
+float64,Female growth in grades,f_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == fem
+float64,Female trend in test scores,f_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == fem
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == ecd
+float64,Poor average test score,p_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == ecd
+float64,Poor growth in grades,p_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == ecd
+float64,Poor trend in test scores,p_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == ecd
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == nec
+float64,Non-poor average test score,np_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == nec
+float64,Non-poor growth in grades,np_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == nec
+float64,Non-poor trend in test scores,np_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == nec
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == wag
+float64,White / Asian Gap average test score,wa_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == wag
+float64,White / Asian Gap growth in grades,wa_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == wag
+float64,White / Asian Gap trend in test scores,wa_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == wag
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == wbg
+float64,White / Black Gap average test score,wb_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == wbg
+float64,White / Black Gap growth in grades,wb_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == wbg
+float64,White / Black Gap trend in test scores,wb_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == wbg
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == whg
+float64,White / Hispanic Gap average test score,wh_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == whg
+float64,White / Hispanic Gap growth in grades,wh_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == whg
+float64,White / Hispanic Gap trend in test scores,wh_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == whg
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == mfg
+float64,Male / Female Gap average test score,mf_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == mfg
+float64,Male / Female Gap growth in grades,mf_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == mfg
+float64,Male / Female Gap trend in test scores,mf_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == mfg
+,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == neg
+float64,Poor / Nonpoor Gap,pn_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == neg
+float64,Poor / Nonpoor Gap,pn_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == neg
+float64,Poor / Nonpoor Gap,pn_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == neg
