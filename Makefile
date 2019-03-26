@@ -198,7 +198,7 @@ build/scatterplot/%-base.csv: build/%.csv
 	csvcut -c $($*_scatter) | \
 	csvgrep -c name -i -r '^$$' | \
 	awk -F, '{ printf "%s,%s,%.4f,%.4f,%.4f,%.4f,%.4f\n", $$1,$$2,$$3,$$4,$$5,$$6,$$7 }' | \
-	sed --expression='s/-9999.0//g' | \
+	sed --expression='s/-9999.0000//g' | \
 	sed '1s/.*/$($*_scatter)/' > $@
 
 build/scatterplot/schools-base.csv: build/schools.csv
