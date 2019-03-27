@@ -5,7 +5,7 @@ from algoliasearch import algoliasearch
 
 ALGOLIA_ID = os.getenv('ALGOLIA_ID')
 ALGOLIA_KEY = os.getenv('ALGOLIA_KEY')
-ALGOLIA_INDEX = os.getenv('ALGOLIA_INDEX')
+ALGOLIA_INDEX = sys.argv[2]
 
 if __name__ == '__main__':
 
@@ -15,11 +15,16 @@ if __name__ == '__main__':
     reader = csv.DictReader(f)
     for row in reader:
       try:
+        row['_geoloc'] = {
+          "lat": float(row['lat']),
+          "lng": float(row['lon'])
+        },
         row['lat'] = float(row['lat'])
         row['lon'] = float(row['lon'])
         row['all_avg'] = float(row['all_avg'])
         row['all_grd'] = float(row['all_grd'])
         row['all_coh'] = float(row['all_coh'])
+        row['sz'] = float(row['sz'])
         data.append(row)
       except ValueError as e:
         print('Invalid lat or lon, skipping', row['id'])

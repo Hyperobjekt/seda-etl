@@ -7,7 +7,7 @@ schools_id = ncessch
 
 # master data file names
 counties_main = SEDA_county_pool_GCS_v22.csv
-districts_main = SEDA_geodist_pool_GCS_v22.csv
+districts_main = SEDA_geodist_pool_GCS_v30.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong.csv
 
 # variables to pull into individual files
@@ -206,7 +206,6 @@ build/scatterplot/schools-base.csv: build/schools.csv
 	cat $< | \
 	csvcut -c $(schools_scatter) | \
 	csvgrep -c name -i -r '^$$' | \
-	awk -F, '{ printf "%s,%s,%.4f,%.4f,%.4f,%.4f\n", $$1,$$2,$$3,$$4,$$5,$$6 }' | \
 	sed --expression='s/-9999.0//g' | \
 	sed '1s/.*/$(schools_scatter)/' > $@
 
@@ -234,7 +233,7 @@ deploy_scatterplot:
 ### The search file is deployed to Algolia for indexing.
 ######
 
-search_cols = id,name,lat,lon,all_avg,all_grd,all_coh
+search_cols = id,name,state,lat,lon,all_avg,all_grd,all_coh,sz
 
 search: build/search.csv
 
@@ -243,9 +242,15 @@ build/search.csv: $(foreach t, $(geo_types), build/search/$(t).csv)
 
 build/search/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	csvcut -c $(search_cols) $< > $@
+	csvcut -c $(search_cols) $< | \
+	csvgrep -c name -i -r '^$$' | \
+	sed --expression='s/-9999.0//g' | \
+	sed --expression='s/-9999//g' | \
+	sed '1s/.*/$(search_cols)/' > $@
 
 deploy_search:
-	python3 scripts/deploy_search.py ./build/search.csv
+	python3 scripts/deploy_search.py ./build/search/counties.csv counties
+	python3 scripts/deploy_search.py ./build/search/districts.csv districts
+	python3 scripts/deploy_search.py ./build/search/schools.csv schools
 
 
