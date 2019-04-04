@@ -6,12 +6,12 @@ districts_id = leaidC
 schools_id = ncessch
 
 # master data file names
-counties_main = SEDA_county_pool_GCS_v22.csv
+counties_main = SEDA_county_pool_GCS_v30.csv
 districts_main = SEDA_geodist_pool_GCS_v30.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong.csv
 
 # variables to pull into individual files
-counties_vars = sz all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh all_ses w_ses b_ses h_ses wb_ses wh_ses wb_seg wh_seg frpl_seg
+counties_vars = sz all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh all_ses w_ses b_ses h_ses wb_ses wh_ses wb_seg wh_seg np_seg wb_pov wh_pov np_pov
 districts_vars = $(counties_vars)
 schools_vars = fl_pct rl_pct frl_pct w_pct i_pct a_pct h_pct b_pct
 
@@ -22,6 +22,7 @@ schools_idlen = 12
 
 # use this build ID if one is not set in the environment variables
 BUILD_ID?=dev
+SOURCE_VERSION=0.0.1
 
 # For comma-delimited list
 null :=
@@ -30,9 +31,9 @@ comma := ,
 
 .PHONY: tiles data search vars geojson deploy_search deploy_tilesets deploy_vars deploy_all
 
-all: tiles data vars search
+all: tiles data vars search scatterplot
 
-deploy_all: deploy_search deploy_tilesets deploy_vars
+deploy_all: deploy_tilesets deploy_scatterplot
 
 ## clean                            : Remove files
 clean:
@@ -192,6 +193,8 @@ schools_scatter = id,name,lat,lon,all_avg,frl_pct
 
 scatterplot: $(foreach t, $(geo_types), build/scatterplot/$(t)-base.csv) $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)-$(v).csv))
 
+
+### TODO: Improve formatting, awk messes with header row and is not very readable
 build/scatterplot/%-base.csv: build/%.csv
 	mkdir -p $(dir $@)
 	cat $< | \
@@ -235,17 +238,12 @@ deploy_scatterplot:
 
 search_cols = id,name,state,lat,lon,all_avg,all_grd,all_coh,sz
 
-search: build/search.csv
+search:  $(foreach t, $(geo_types), build/search/$(t).csv)
 
-build/search.csv: $(foreach t, $(geo_types), build/search/$(t).csv)
-	csvstack -g counties,districts,schools $^  > $@
 
-build/search/%.csv: build/%.csv
+build/search/%.csv: build/clean/%.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols) $< | \
-	csvgrep -c name -i -r '^$$' | \
-	sed --expression='s/-9999.0//g' | \
-	sed --expression='s/-9999//g' | \
 	sed '1s/.*/$(search_cols)/' > $@
 
 deploy_search:
@@ -254,3 +252,21 @@ deploy_search:
 	python3 scripts/deploy_search.py ./build/search/schools.csv schools
 
 
+deploy_source_data:
+	for f in source_data/*.csv; do gzip $$f; done
+	for f in source_data/*.geojson; do gzip $$f; done
+	for f in source_data/*.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(SOURCE_VERSION)/$$(basename $$f) --acl=public-read; done
+
+
+######
+### EXPORTS
+######
+### Creates public data by state
+######
+
+### Remove any places with empty names, drop N/A values
+build/clean/%.csv: build/%.csv
+	mkdir -p $(dir $@)
+	csvgrep -c name -i -r '^$$' $< | \
+	sed --expression='s/-9999.0//g' | \
+	sed --expression='s/-9999//g' > $@

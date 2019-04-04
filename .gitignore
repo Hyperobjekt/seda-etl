@@ -4,3 +4,4 @@ seda_data
 *.zip
 .vscode
 node_modules
+source_data
