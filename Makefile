@@ -193,7 +193,6 @@ schools_scatter = id,name,lat,lon,all_avg,frl_pct
 
 scatterplot: $(foreach t, $(geo_types), build/scatterplot/$(t)-base.csv) $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)-$(v).csv))
 
-
 ### TODO: Improve formatting, awk messes with header row and is not very readable
 build/scatterplot/%-base.csv: build/%.csv
 	mkdir -p $(dir $@)
@@ -220,6 +219,11 @@ build/scatterplot/%.csv: build/processed/$$(subst -$$(lastword $$(subst -, ,$$*)
 	awk -F, ' $$2 != -9999.0 { print $$0 } ' | \
 	awk -F, '{ printf "%0$($(subst -$(lastword $(subst -, ,$*)),,$*)_idlen)i,%.4f\n", $$1,$$2 }' | \
 	sed '1s/.*/id,$(lastword $(subst -, ,$*))/' > $@
+
+
+split_schools: scatterplot
+	mkdir -p build/scatterplot/schools
+	for f in build/scatterplot/schools*.csv; do xsv partition -p 2 id build/scatterplot/schools/$$(basename "$${f#*-}" .csv) $$f; done
 
 deploy_scatterplot:
 	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \

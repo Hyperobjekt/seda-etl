@@ -31,9 +31,13 @@ RUN rm -rf /tmp/tippecanoe-src
 
 # Symlink NodeJS and install NPM packages
 RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
-    ln -s /usr/bin/nodejs /usr/bin/node && \
-    apt-get -y install nodejs && \
-    npm install -g mapshaper@0.4.106 geojson-polygon-labels@1.2.1 csv2geojson algolia-csv
+  ln -s /usr/bin/nodejs /usr/bin/node && \
+  apt-get -y install nodejs && \
+  npm install -g mapshaper@0.4.106 geojson-polygon-labels@1.2.1 csv2geojson algolia-csv
+
+# Install rust, cargo, and xsv
+RUN curl https://sh.rustup.rs -sSf | sh && \
+  cargo install xsv
 
 WORKDIR /
 RUN git clone https://github.com/Hyperobjekt/seda-etl.git
