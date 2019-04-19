@@ -10,10 +10,18 @@ counties_main = SEDA_county_pool_GCS_v30.csv
 districts_main = SEDA_geodist_pool_GCS_v30.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong.csv
 
+counties_metrics = avg grd coh ses seg pov sz
+counties_dems = all a b p f h m mf np pn wa wb wh fl
+
+schools_metrics = pct avg grd coh sz
+schools_dems = all w a h b i fl rl frl
+
 # variables to pull into individual files
-counties_vars = sz all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh all_ses w_ses b_ses h_ses wb_ses wh_ses wb_seg wh_seg np_seg wb_pov wh_pov np_pov
+# counties_vars = sz all_avg all_grd all_coh a_avg a_grd a_coh b_avg b_grd b_coh p_avg p_grd p_coh f_avg f_grd f_coh h_avg h_grd h_coh m_avg m_grd m_coh mf_avg mf_grd mf_coh np_avg np_grd np_coh pn_avg pn_grd pn_coh wa_avg wa_grd wa_coh wb_avg wb_grd wb_coh wh_avg wh_grd wh_coh w_avg w_grd w_coh all_ses w_ses b_ses h_ses wb_ses wh_ses wb_seg wh_seg np_seg wb_pov wh_pov np_pov
+counties_vars = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m)))
 districts_vars = $(counties_vars)
-schools_vars = fl_pct rl_pct frl_pct w_pct i_pct a_pct h_pct b_pct
+# schools_vars = fl_pct rl_pct frl_pct w_pct i_pct a_pct h_pct b_pct
+schools_vars = $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
 
 # length of id used for each region type id
 counties_idlen = 5
@@ -186,10 +194,19 @@ build/data/%.csv:
 ### Also creates a base file to use on initial load, with names, lat, lon, etc.
 ######
 
+reduced_schools: $(foreach x, $(schools_vars), $(foreach y, $(schools_vars), build/reduced/schools/$(x)-$(y).csv))
+point_radius = 0.02
+
+build/reduced/schools/%.csv: build/schools.csv
+	mkdir -p $(dir $@)
+	cat $< | \
+	python3 scripts/reduce_points.py $(firstword $(subst -, ,$*)) $(lastword $(subst -, ,$*)) all_sz $(point_radius) > $@
+
+
 # variables to pull into individual files
-counties_scatter = id,name,lat,lon,all_avg,all_ses,sz
+counties_scatter = id,name,lat,lon,all_sz
 districts_scatter = $(counties_scatter)
-schools_scatter = id,name,lat,lon,all_avg,frl_pct
+schools_scatter = id,name,lat,lon,all_sz
 
 scatterplot: $(foreach t, $(geo_types), build/scatterplot/$(t)-base.csv) $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)-$(v).csv))
 
