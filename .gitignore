@@ -5,3 +5,4 @@ seda_data
 .vscode
 node_modules
 source_data
+__pycache__

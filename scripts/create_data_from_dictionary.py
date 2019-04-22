@@ -4,11 +4,15 @@ import csv
 import pandas as pd
 import numpy as np
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'build', 'data')
-
 if __name__ == '__main__':
 
+  BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+  if len(sys.argv) > 1:
+    DATA_DIR = os.path.join(BASE_DIR, sys.argv[1])
+  else:
+    DATA_DIR = os.path.join(BASE_DIR, 'build', 'data')
+  
   # Read the data dictionary from stdin
   dict_df = pd.read_csv(
     sys.stdin, 
@@ -107,6 +111,7 @@ if 'lat' in output_df.columns:
 
 # fill in missing numeric values
 output_df = output_df.fillna(-9999)
+output_df = output_df.round(3)
 output_df = output_df.reset_index()
 output_df[['fid']] = output_df[['index']].apply(pd.to_numeric)
 output_df.set_index('index', inplace=True)

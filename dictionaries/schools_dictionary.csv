@@ -1,5 +1,5 @@
 name,output_column,source_file,column,type,row_condition
-Identifier,id,schools_cov.csv,ncessch,,
+Identifier,id,schools_cov.csv,ncessch,object,
 Percent free lunch,fl_pct,schools_cov.csv,perflu,float64,
 Percent reduced lunch,rl_pct,schools_cov.csv,perrlu,float64,
 Percent free or reduce lunch,frl_pct,schools_cov.csv,perfrlu,float64,
@@ -8,12 +8,12 @@ Percent indian students,i_pct,schools_cov.csv,perind,float64,
 Percent asian students,a_pct,schools_cov.csv,perasn,float64,
 Percent hispanic students,h_pct,schools_cov.csv,perhsp,float64,
 Percent black students,b_pct,schools_cov.csv,perblk,float64,
-Identifier,id,SEDA_school_pool_GCS_v30_latlong.csv,ncessch,,
+Identifier,id,SEDA_school_pool_GCS_v30_latlong.csv,ncessch,object,
 Name,name,SEDA_school_pool_GCS_v30_latlong.csv,schoolname,object,
 Latitude,lat,SEDA_school_pool_GCS_v30_latlong.csv,latcode,float64,
 Longitude,lon,SEDA_school_pool_GCS_v30_latlong.csv,loncode,float64,
-Identifier,id,SEDA_school_pool_GCS_v30_latlong.csv,ncessch,,subgroup == all
-School Size,sz,SEDA_school_pool_GCS_v30_latlong.csv,mn_asmts,float64,subgroup == all
+Identifier,id,SEDA_school_pool_GCS_v30_latlong.csv,ncessch,object,subgroup == all
+School Size,all_sz,SEDA_school_pool_GCS_v30_latlong.csv,mn_asmts,float64,subgroup == all
 State Abbr,state,SEDA_school_pool_GCS_v30_latlong.csv,stateabb,object,subgroup == all
 Average test score,all_avg,SEDA_school_pool_GCS_v30_latlong.csv,mn_avg_eb,float64,subgroup == all
 Growth in grades across years,all_grd,SEDA_school_pool_GCS_v30_latlong.csv,mn_grd_eb,float64,subgroup == all

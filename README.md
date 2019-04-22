@@ -38,3 +38,4 @@ The following tasks are available:
   - `deploy_tiles`: deploys tiles to mapbox
   - `deploy_search`: deploys search data to Algolia index
   - `deploy_vars`: deploys individual variable CSV files to S3
+
