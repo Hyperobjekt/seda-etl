@@ -31,7 +31,7 @@ def clean_name(df, region, col='name'):
   """Removes rows with no name, and formats school names
   if the region is schools.
   """
-  df = df[df[col] != '-9999']
+  df = df.loc[df[col] != '-9999'].copy()
   df.dropna(subset=[col],inplace=True)
   if region == 'schools':
     df[col] = df[col].str.replace('elem sch$|el$', 'elementary', case=False)

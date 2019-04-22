@@ -10,7 +10,7 @@ from data_types import get_dtypes_dict
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'build')
 
-OUTPUT_DIR = os.path.join(BASE_DIR, 'build', 'reduced')
+OUTPUT_DIR = os.path.join(BASE_DIR, 'build', 'scatterplot', 'schools', 'reduced')
 
 def dist(p, q):
   "Return the Euclidean distance between points p and q."
@@ -23,8 +23,9 @@ def get_subset(points, r):
   result = []
   index = rtree.index.Index()
   for i, p in enumerate(points):
-    geoid, px, py = p
-    if px == -9999 or py == -9999:
+    px = p[1]
+    py = p[2]
+    if np.isnan(px) or np.isnan(py):
       continue
     nearby = index.intersection((px - r, py - r, px + r, py + r))
     if all(dist([p[1], p[2]], [points[j][1], points[j][2]]) >= r for j in nearby):
@@ -32,11 +33,11 @@ def get_subset(points, r):
       index.insert(i, (px, py, px, py))
   return result
 
-def extract_tuples(df, xVar, yVar, zVar):
+def extract_tuples(df, cols):
   """Return tuples containing the id, and values for
   the provided xVar, yVar, zVar
   """
-  subset = df[['id', xVar, yVar]]
+  subset = df[cols]
   tuples = [tuple(x) for x in subset.values]
   return tuples
 
@@ -45,42 +46,39 @@ def create_pair_csv(region, df, xVar, yVar, zVar, radius):
   sampling only one point from within the provided radius.
   Points with a higher zVar value have priority. 
   """
-  # no file needed when x and y are the same
-  if xVar == yVar:
-    return
 
   # make sure the columns exist in the data set
-  if xVar not in df.columns or yVar not in df.columns or zVar not in df.columns:
-    print("skipping x / y pair, var does not exist " + xVar + ", " + yVar ,file=sys.stderr)
+  if xVar == yVar or xVar not in df.columns or yVar not in df.columns or zVar not in df.columns:
+    print("skipping x / y pair " + xVar + ", " + yVar ,file=sys.stderr)
     return
 
   # extract data into tuples
-  tuples = extract_tuples(data_df, xVar, yVar, zVar)
+  output_cols = [ 'id', xVar, yVar, zVar, 'name', 'lon', 'lat' ]
+  tuples = extract_tuples(df, output_cols)
 
   # get subset of points
   subset = get_subset(tuples, radius)
 
-  output_file = os.path.join(OUTPUT_DIR, region, xVar + '-' + yVar + '.csv')
-
   # convert tuples to new csv
+  output_file = os.path.join(OUTPUT_DIR, xVar + '-' + yVar + '.csv')
   output_df = pd.DataFrame(subset)
   output_df = output_df.round(2)
   try:
-    output_df.columns = [ 'id', xVar, yVar ]
+    output_df.columns = output_cols
     output_df.to_csv(output_file, index=False)
-    print("wrote", output_file)
+    print("reduced", xVar, "/", yVar, "pair to",str(output_df.shape[0]),"points. (", 100*output_df.shape[0]/df.shape[0], "%)")
   except ValueError:
-    print("error", xVar, yVar, output_df)
+    print("error witing file", xVar, yVar)
 
 if __name__ == '__main__':
 
   region = sys.argv[1]
   radius = float(sys.argv[2])
   dtypes = get_dtypes_dict(region)
-  zVar = 'sz'
+  zVar = 'all_sz'
 
   # do not create pairs with these columns
-  no_pairs = [ 'id', 'state', 'name', 'lon', 'lat', 'fid', 'sz' ]
+  no_pairs = [ 'id', 'state', 'name', 'lon', 'lat', 'fid', 'all_sz' ]
 
   # Read the data dictionary from stdin
   data_df = pd.read_csv(

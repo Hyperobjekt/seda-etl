@@ -210,54 +210,45 @@ deploy_source_data:
 ### Also creates a base file to use on initial load, with names, lat, lon, etc.
 ######
 
-reduced_schools: $(foreach x, $(schools_vars), $(foreach y, $(schools_vars), build/reduced/schools/$(x)-$(y).csv))
-point_radius = 0.02
-
-scatterplot_schools: build/schools.csv
-	mkdir -p build/scatterplot/national
-	cat $< | \
-	python3 scripts/reduce_points.py $(firstword $(subst -, ,$*)) $(lastword $(subst -, ,$*)) all_sz $(point_radius) > $@
-
-schools_meta: build/schools.csv
-	mkdir -p build/meta
-
 # variables to pull into individual files
-counties_scatter = id,name,lat,lon,all_sz
-districts_scatter = $(counties_scatter)
-schools_scatter = id,name,lat,lon,all_sz
+meta_vars = id,name,lat,lon,all_sz
+meta_files = $(foreach t, $(geo_types), build/scatterplot/meta/$(t).csv)
 
+# individual file for each pair with id,{VAR_NAME}
+individual_var_files = $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)/$(v).csv))
 
-build/plot/districts/all.csv: build/districts.csv
+# files to create reduced pairs for
+reduced_pair_files = build/scatterplot/schools/reduced/stats.csv
+point_radius = 0.01
+
+scatterplot: $(meta_files) $(individual_var_files) $(reduced_pair_files)
+	find build/scatterplot/ -type f -size 0 -delete
+
+build/scatterplot/meta/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	cat $< | \
-	python3 get_clean_cols.py districts > $@
+	cat $< | csvcut -c $(meta_vars) > $@
 
-build/plot/districts/meta.csv: build/districts.csv
+build/scatterplot/meta/schools.csv: build/schools.csv
 	mkdir -p $(dir $@)
-	cat $< | \
-	python3 get_clean_cols.py districts $(districts_scatter) > $@
+	csvcut -c $(meta_vars) $< > $@
+	xsv partition -p 2 id $(dir $@)schools $@
 
-build/plot/counties/meta.csv: build/districts.csv
+build/scatterplot/districts/%.csv: build/districts.csv
 	mkdir -p $(dir $@)
-	cat $< | \
-	python3 get_clean_cols.py districts $(districts_scatter) > $@
+	csvcut -c id,$* $< > $@ || true
 
-
-scatterplot: $(foreach t, $(geo_types), build/scatterplot/$(t)-base.csv) $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)-$(v).csv))
-
-build/scatterplot/%-base.csv: build/%.csv
+build/scatterplot/counties/%.csv: build/counties.csv
 	mkdir -p $(dir $@)
-	cat $< | \
-	csvcut -c $($*_scatter) > $@
+	csvcut -c id,$* $< > $@ || true
 
-.SECONDEXPANSION:
-build/scatterplot/%.csv: build/processed/$$(subst -$$(lastword $$(subst -, ,$$*)),,$$*).csv
+build/scatterplot/schools/%.csv: build/schools.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$(lastword $(subst -, ,$*)) $^ > $@
+	csvcut -c id,$* $< > $@ || true
+	xsv partition --filename {}/$*.csv --prefix-length 2 id $(dir $@) $@ || true
 
-split_schools: scatterplot
-	mkdir -p build/scatterplot/schools
-	for f in build/scatterplot/schools*.csv; do xsv partition -p 2 id build/scatterplot/schools/$$(basename "$${f#*-}" .csv) $$f; done
+build/scatterplot/schools/reduced/stats.csv: build/schools.csv
+	mkdir -p $(dir $@)
+	python3 scripts/create_pairs.py schools $(point_radius) > $@
 
 deploy_scatterplot:
 	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \

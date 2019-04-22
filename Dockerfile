@@ -36,9 +36,11 @@ RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   npm install -g mapshaper@0.4.106 geojson-polygon-labels@1.2.1 csv2geojson algolia-csv
 
 # Install rust, cargo, and xsv
-RUN curl https://sh.rustup.rs -sSf | sh && \
-  cargo install xsv
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN /bin/bash -c "source $HOME/.cargo/env \
+  && cargo install xsv"
 
+# Clone ETL repo
 WORKDIR /
 RUN git clone https://github.com/Hyperobjekt/seda-etl.git
 WORKDIR /seda-etl/
@@ -46,6 +48,10 @@ WORKDIR /seda-etl/
 # Install Python packages
 RUN pip3 install pipenv && pipenv install --system
 
+# make entrypoint executable
 RUN chmod +x run-task.sh
+
+# Add cargo to path
+ENV PATH="/root/.cargo/bin:$PATH"
 
 ENTRYPOINT ["/seda-etl/run-task.sh"]
