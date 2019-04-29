@@ -45,36 +45,41 @@ null :=
 space := $(null) $(null)
 comma := ,
 
-.PHONY: tiles data search geojson scatterplot deploy_search deploy_tilesets deploy_scatterplot deploy_all
+.PHONY: help tiles data search geojson scatterplot deploy_search deploy_tilesets deploy_scatterplot deploy_all
 
-### all                        : Build everything!
+# Based on https://swcarpentry.github.io/make-novice/08-self-doc/
+#### help                                        : Print help
+help: Makefile
+	perl -ne '/^#### / && s/^#### //g && print' $<
+
+#### all                        : Build everything!
 all: geojson tiles data search scatterplot
 
-### deploy_all                 : Deploy everything, except search because that costs money through Algolia
+#### deploy_all                 : Deploy everything, except search because that costs money through Algolia
 deploy_all: deploy_tilesets deploy_scatterplot
 
-### tiles:                     : Create mbtiles for all regions
+#### tiles:                     : Create mbtiles for all regions
 tiles: $(foreach t, $(geo_types), build/tiles/$(t).mbtiles)
 
-### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
+#### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
 deploy_tilesets:
 	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(BUILD_ID); done
 
-### geojson                    : Create GeoJSON files with data for all regions
+#### geojson                    : Create GeoJSON files with data for all regions
 geojson: $(foreach t, $(geo_types), build/geography/$(t).geojson)
 
-### data                       : Creates master data files used to populate search, tilesets, etc.
+#### data                       : Creates master data files used to populate search, tilesets, etc.
 data: $(foreach t, $(geo_types), build/$(t).csv)
 
-### deploy_public              : Deploys master csv data and geojson files split by state 
+#### deploy_public              : Deploys master csv data and geojson files split by state 
 deploy_public:
 	python3 scripts/deploy_public.py
 
-### scatterplot                : Create all individual var files used for scatterplots
+#### scatterplot                : Create all individual var files used for scatterplots
 scatterplot: $(meta_files) $(individual_var_files) $(reduced_pair_files)
 	find build/scatterplot/ -type f -size 0 -delete
 
-### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
+#### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
 deploy_scatterplot:
 	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
 		--recursive \
@@ -82,26 +87,26 @@ deploy_scatterplot:
 		--region=us-east-1 \
 		--cache-control max-age=2628000
 
-### search                    : Create data files containing data for search
+#### search                    : Create data files containing data for search
 search:  $(foreach t, $(geo_types), build/search/$(t).csv)
 
-### deploy_search             : Deploy the search data to Algolia (WARNING: 100,000+ records, this will cost $$)
+#### deploy_search             : Deploy the search data to Algolia (WARNING: 100,000+ records, this will cost $$)
 deploy_search:
 	python3 scripts/deploy_search.py ./build/search/counties.csv counties
 	python3 scripts/deploy_search.py ./build/search/districts.csv districts
 	python3 scripts/deploy_search.py ./build/search/schools.csv schools
 
-### clean                      : Remove files
+#### clean                      : Remove files
 clean:
 	rm -rf build
 
 
-######
+###
 ### CHOROPLETH TILES
-######
+###
 ### `make tiles`
 ### Creates the .mbtiles files for the tilesets, populated with data
-######
+###
 
 # cols that get converted to float in the tileset
 numeric_cols = $(counties_vars) $(schools_vars)
@@ -126,12 +131,12 @@ build/tiles/schools.mbtiles: build/geography/schools.geojson
 
 
 
-######
+###
 ### GEOJSON
-######
+###
 ### `make geojson`
 ### Creates GeoJSON containing all of the data that is used in tilesets.
-######
+###
 
 census_ftp_base = ftp://ftp2.census.gov/geo/tiger/GENZ2010/
 counties-pattern = gz_*_*_050_*_500k.zip
@@ -187,12 +192,12 @@ build/geography/schools.geojson: build/schools.csv
 
 
 
-######
+###
 ### DATA
-######
+###
 ### `make data`
 ### build master data files containing all data for each region type.
-######
+###
 
 geojson_label_cmd = node --max_old_space_size=4096 $$(which geojson-polygon-labels)
 
@@ -235,11 +240,11 @@ build/ids/%.csv: build/source_data/$$($$*_main)
 
 
 
-######
+###
 ### SOURCE DATA
-######
+###
 ### handles fetching and deploying source data
-######
+###
 
 ### Fetch source data from S3 bucket
 build/source_data/%.csv:
@@ -255,15 +260,15 @@ deploy_source_data:
 
 
 
-######
+###
 ### SCATTERPLOT
-######
+###
 ### `make scatterplot`
 ### Takes each of the variables for each region (e.g. counties_vars)
 ### and generate csv files mapping id : variable value.  These files
 ### are used for scatterplots.  Each variable is loaded as needed.
 ### Also creates a base file to use on initial load, with names, lat, lon, etc.
-######
+###
 
 # point radius used for for reducing points
 point_radius = 0.01
@@ -308,13 +313,13 @@ build/scatterplot/schools/reduced/schools.csv: build/schools.csv
 
 
 
-######
+###
 ### SEARCH
-######
+###
 ### Generated search file contains all counties, districts, and schools
 ### with their name, latitude, longitude, and three key metrics.
 ### The search file is deployed to Algolia for indexing.
-######
+###
 
 # columns to extract for search
 search_cols = id,name,state_name,lat,lon,all_sz
