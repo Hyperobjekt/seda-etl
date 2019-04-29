@@ -23,12 +23,13 @@ def get_subset(points, r):
   result = []
   index = rtree.index.Index()
   for i, p in enumerate(points):
-    px = p[1]
-    py = p[2]
+    px = p[4]
+    py = p[5]
+    print(px, py)
     if np.isnan(px) or np.isnan(py):
       continue
     nearby = index.intersection((px - r, py - r, px + r, py + r))
-    if all(dist([p[1], p[2]], [points[j][1], points[j][2]]) >= r for j in nearby):
+    if all(dist([px, py], [points[j][4], points[j][5]]) >= r for j in nearby):
       result.append(p)
       index.insert(i, (px, py, px, py))
   return result
@@ -53,7 +54,7 @@ def create_pair_csv(region, df, xVar, yVar, zVar, radius):
     return
 
   # extract data into tuples
-  output_cols = [ 'id', xVar, yVar, zVar, 'name', 'lon', 'lat' ]
+  output_cols = [ 'id', 'name', 'lon', 'lat', xVar, yVar, zVar ]
   tuples = extract_tuples(df, output_cols)
 
   # get subset of points
@@ -78,7 +79,7 @@ if __name__ == '__main__':
   zVar = 'all_sz'
 
   # do not create pairs with these columns
-  no_pairs = [ 'id', 'state', 'name', 'lon', 'lat', 'fid', 'all_sz' ]
+  no_pairs = [ 'id', 'state', 'name', 'lon', 'lat', 'fid', 'all_sz', 'state_name', 'city' ]
 
   # Read the data dictionary from stdin
   data_df = pd.read_csv(
@@ -89,8 +90,10 @@ if __name__ == '__main__':
   # sort by zVar so the largest are selected
   data_df = data_df.sort_values(by=[zVar], ascending=False)
 
+  # sort the columns in alphabetic order for consistent var names
   data_df = data_df.reindex(sorted(data_df.columns), axis=1)
 
+  # loop through all columns and make pairs
   for i, c1 in enumerate(data_df.columns):
     for c2 in data_df.columns[i:]:
       if c1 != c2 and c1 not in no_pairs and c2 not in no_pairs:

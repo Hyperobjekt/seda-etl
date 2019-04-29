@@ -21,10 +21,7 @@ if __name__ == '__main__':
         },
         row['lat'] = float(row['lat'])
         row['lon'] = float(row['lon'])
-        row['all_avg'] = float(row['all_avg'])
-        row['all_grd'] = float(row['all_grd'])
-        row['all_coh'] = float(row['all_coh'])
-        row['sz'] = float(row['sz'])
+        row['all_sz'] = float(row['all_sz'])
         data.append(row)
       except ValueError as e:
         print('Invalid lat or lon, skipping', row['id'])
