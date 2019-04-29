@@ -38,7 +38,7 @@ reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
 
 # use this build ID if one is not set in the environment variables
 BUILD_ID?=dev
-SOURCE_VERSION=0.0.1
+DATA_VERSION?=0.0.1
 
 # For comma-delimited list
 null :=
@@ -48,14 +48,14 @@ comma := ,
 .PHONY: help tiles data search geojson scatterplot deploy_search deploy_tilesets deploy_scatterplot deploy_all
 
 # Based on https://swcarpentry.github.io/make-novice/08-self-doc/
-#### help                                        : Print help
+#### help                       : Print help
 help: Makefile
 	perl -ne '/^#### / && s/^#### //g && print' $<
 
-#### all                        : Build everything!
-all: geojson tiles data search scatterplot
+#### all                        : Build everything
+all: geojson tiles data search scatterplot export_data
 
-#### deploy_all                 : Deploy everything, except search because that costs money through Algolia
+#### deploy_all                 : Deploy everything, except search
 deploy_all: deploy_tilesets deploy_scatterplot
 
 #### tiles:                     : Create mbtiles for all regions
@@ -71,26 +71,34 @@ geojson: $(foreach t, $(geo_types), build/geography/$(t).geojson)
 #### data                       : Creates master data files used to populate search, tilesets, etc.
 data: $(foreach t, $(geo_types), build/$(t).csv)
 
-#### deploy_public              : Deploys master csv data and geojson files split by state 
-deploy_public:
-	python3 scripts/deploy_public.py
+#### export_data                : create csv / geojson files split by state 
+export_data: data geojson
+	python3 scripts/create_export_data.py
+
+#### deploy_export_data         : Deploy the csv / geojson exports
+deploy_export_data: export_data
+	aws s3 cp ./build/export s3://$(EXPORT_DATA_BUCKET)/$(DATA_VERSION) \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
 
 #### scatterplot                : Create all individual var files used for scatterplots
 scatterplot: $(meta_files) $(individual_var_files) $(reduced_pair_files)
 	find build/scatterplot/ -type f -size 0 -delete
 
 #### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
-deploy_scatterplot:
+deploy_scatterplot: scatterplot
 	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
 		--recursive \
 		--acl=public-read \
 		--region=us-east-1 \
 		--cache-control max-age=2628000
 
-#### search                    : Create data files containing data for search
+#### search                     : Create data files containing data for search
 search:  $(foreach t, $(geo_types), build/search/$(t).csv)
 
-#### deploy_search             : Deploy the search data to Algolia (WARNING: 100,000+ records, this will cost $$)
+#### deploy_search              : Algolia deploy (WARNING: 100,000+ records, costs $$)
 deploy_search:
 	python3 scripts/deploy_search.py ./build/search/counties.csv counties
 	python3 scripts/deploy_search.py ./build/search/districts.csv districts
