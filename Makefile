@@ -31,7 +31,7 @@ meta_vars = id,name,lat,lon,all_sz
 meta_files = $(foreach t, $(geo_types), build/scatterplot/meta/$(t).csv)
 
 # individual files for all regions containing id,{VAR_NAME}
-individual_var_files = $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)/$(v).csv))
+individual_var_files = $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)/$(v).csv)) build/scatterplot/districts/all_avg3.csv build/scatterplot/districts/all_avg4.csv build/scatterplot/districts/all_avg5.csv build/scatterplot/districts/all_avg6.csv build/scatterplot/districts/all_avg7.csv build/scatterplot/districts/all_avg8.csv
 
 # files to create reduced pairs for
 reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
@@ -76,7 +76,7 @@ export_data: data geojson
 	python3 scripts/create_export_data.py
 
 #### deploy_export_data         : Deploy the csv / geojson exports
-deploy_export_data: export_data
+deploy_export_data:
 	aws s3 cp ./build/export s3://$(EXPORT_DATA_BUCKET)/$(DATA_VERSION) \
 		--recursive \
 		--acl=public-read \
@@ -88,7 +88,7 @@ scatterplot: $(meta_files) $(individual_var_files) $(reduced_pair_files)
 	find build/scatterplot/ -type f -size 0 -delete
 
 #### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
-deploy_scatterplot: scatterplot
+deploy_scatterplot:
 	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
 		--recursive \
 		--acl=public-read \
@@ -181,7 +181,7 @@ build/geography/base/districts.geojson:
 ### Create data file with only data for tilesets
 build/geography/data/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	csvcut --not-columns lat,lon,state_name,state $< > $@
+	csvcut --not-columns lat,lon,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state_name,state $< > $@
 
 ### Creates counties / districts geojson, populated with data
 build/geography/%.geojson: build/geography/base/%.geojson build/geography/data/%.csv
@@ -223,7 +223,7 @@ build/schools.csv: build/from_dict/schools.csv
 
 ### Extracts data based on the dictionary file for counties / districts / schools
 .SECONDEXPANSION:
-build/from_dict/%.csv: build/source_data/$$*_cov.csv build/source_data/$$($$*_main)
+build/from_dict/%.csv: build/source_data/$$*_cov.csv build/source_data/$$($$*_main) build/source_data/district_grade_estimates.csv
 	mkdir -p $(dir $@)
 	cat dictionaries/$*_dictionary.csv | \
 	python3 scripts/create_data_from_dictionary.py $(dir $<) > $@
