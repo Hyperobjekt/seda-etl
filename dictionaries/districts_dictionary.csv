@@ -18,6 +18,13 @@ float64,District Size,all_sz,SEDA_geodist_pool_GCS_v30.csv,mn_asmts,subgroup == 
 float64,Average test score,all_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == all
 float64,Growth in grades across years,all_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == all
 float64,Trend in test scores across years,all_coh,SEDA_geodist_pool_GCS_v30.csv,mn_coh_eb,subgroup == all
+object,Identifier,id,district_grade_estimates.csv,leaidC,subgroup == all
+float64,Grade 3 averages test scores,all_avg3,district_grade_estimates.csv,mn_gr3,subgroup == all
+float64,Grade 4 averages test scores,all_avg4,district_grade_estimates.csv,mn_gr4,subgroup == all
+float64,Grade 5 averages test scores,all_avg5,district_grade_estimates.csv,mn_gr5,subgroup == all
+float64,Grade 6 averages test scores,all_avg6,district_grade_estimates.csv,mn_gr6,subgroup == all
+float64,Grade 7 averages test scores,all_avg7,district_grade_estimates.csv,mn_gr7,subgroup == all
+float64,Grade 8 averages test scores,all_avg8,district_grade_estimates.csv,mn_gr8,subgroup == all
 object,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == wht
 float64,White average test score,w_avg,SEDA_geodist_pool_GCS_v30.csv,mn_avg_eb,subgroup == wht
 float64,White growth in grades,w_grd,SEDA_geodist_pool_GCS_v30.csv,mn_grd_eb,subgroup == wht

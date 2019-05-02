@@ -21,10 +21,13 @@ if __name__ == '__main__':
         },
         row['lat'] = float(row['lat'])
         row['lon'] = float(row['lon'])
-        row['all_sz'] = float(row['all_sz'])
+        if row['all_sz']:
+          row['all_sz'] = float(row['all_sz'])
+        else:
+          row['all_sz'] = 0
         data.append(row)
       except ValueError as e:
-        print('Invalid lat or lon, skipping', row['id'])
+        print('Invalid lat or lon, skipping', row['name'])
 
   client = algoliasearch.Client(ALGOLIA_ID, ALGOLIA_KEY)
   index = client.init_index(ALGOLIA_INDEX)
