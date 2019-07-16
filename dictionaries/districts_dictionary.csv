@@ -1,11 +1,11 @@
 type,name,output_column,source_file,column,row_condition
 object,Identifier,id,districts_cov.csv,leaid,
-float64,Standardized SES composite (all races),all_ses,districts_cov.csv,sesall,
-float64,Standardized SES composite (white),w_ses,districts_cov.csv,seswht,
-float64,Standardized SES composite (black),b_ses,districts_cov.csv,sesblk,
-float64,Standardized SES composite (hispanic),h_ses,districts_cov.csv,seshsp,
-float64,Socioeconomic difference - white/black,wb_ses,districts_cov.csv,sesdiff_whtblk,
-float64,Socioeconomic difference - white/hispanic,wh_ses,districts_cov.csv,sesdiff_whthsp,
+float64,Standardized SES composite (all races),all_ses,districts_cov.csv,sesavgall,
+float64,Standardized SES composite (white),w_ses,districts_cov.csv,sesavgwht,
+float64,Standardized SES composite (black),b_ses,districts_cov.csv,sesavgblk,
+float64,Standardized SES composite (hispanic),h_ses,districts_cov.csv,sesavghsp,
+float64,Socioeconomic difference - white/black,wb_ses,districts_cov.csv,sesavgwhtblk,
+float64,Socioeconomic difference - white/hispanic,wh_ses,districts_cov.csv,sesavgwhthsp,
 float64,Difference in poverty rates,wb_pov,districts_cov.csv,diffexplch_blkwht
 float64,Difference in poverty rates,wh_pov,districts_cov.csv,diffexplch_hspwht
 float64,Difference in poverty rates,np_pov,districts_cov.csv,diffexplch_flnfl

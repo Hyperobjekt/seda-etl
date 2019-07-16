@@ -38,7 +38,7 @@ reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
 
 # use this build ID if one is not set in the environment variables
 BUILD_ID?=dev
-DATA_VERSION?=0.0.1
+DATA_VERSION?=0.0.2
 
 # For comma-delimited list
 null :=
@@ -53,7 +53,7 @@ help: Makefile
 	perl -ne '/^#### / && s/^#### //g && print' $<
 
 #### all                        : Build everything
-all: geojson tiles data search scatterplot export_data
+all: geojson tiles data search scatterplot
 
 #### deploy_all                 : Deploy everything, except search
 deploy_all: deploy_tilesets deploy_scatterplot
@@ -154,34 +154,43 @@ districts-geoid = "this.properties.id = this.properties.GEOID"
 districts-name = "this.properties.name = this.properties.NAME"
 
 ### Creates counties geojson w/ GEOID and name (no data)
-build/geography/base/counties.geojson:
+build/geography/base/%.geojson:
 	mkdir -p $(dir $@)
-	wget --no-use-server-timestamps -np -nd -r -P $(dir $@)tmp -A '$(counties-pattern)' $(census_ftp_base)
-	for f in $(dir $@)tmp/*.zip; do unzip -d $(dir $@)tmp $$f; done
-	mapshaper $(dir $@)tmp/*.shp combine-files \
-		-each $(counties-geoid) \
-		-each $(counties-name) \
-		-filter-fields id,name \
-		-o - combine-layers format=geojson > $@
-	rm -rf $(dir $@)tmp
+	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$*.geojson.gz | \
+	gunzip -c - > $@
 
-### Creates districts geojson w/ GEOID and name (no data)
-build/geography/base/districts.geojson:
+### TO FETCH COUNTIES FROM CENSUS:
+# wget --no-use-server-timestamps -np -nd -r -P $(dir $@)tmp -A '$(counties-pattern)' $(census_ftp_base)
+# for f in $(dir $@)tmp/*.zip; do unzip -d $(dir $@)tmp $$f; done
+# mapshaper $(dir $@)tmp/*.shp combine-files \
+# 	-each $(counties-geoid) \
+# 	-each $(counties-name) \
+# 	-filter-fields id,name \
+# 	-o - combine-layers format=geojson > $@
+# rm -rf $(dir $@)tmp
+
+### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
+# build/geography/base/districts.geojson:
+# 	mkdir -p $(dir $@)
+# 	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/SEDA_shapefiles_v21.zip $(dir $@)
+# 	unzip -d $(dir $@)tmp $(dir $@)SEDA_shapefiles_v21.zip
+# 	mapshaper $(dir $@)tmp/*.shp combine-files \
+# 		-each $(districts-geoid) \
+# 		-each $(districts-name) \
+# 		-filter-fields id,name \
+# 		-uniq id \
+# 		-o - combine-layers format=geojson > $@
+# 	rm -rf $(dir $@)tmp
+
+### Create data file with only data for tilesets
+build/geography/data/districts.csv: build/districts.csv
 	mkdir -p $(dir $@)
-	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/SEDA_shapefiles_v21.zip $(dir $@)
-	unzip -d $(dir $@)tmp $(dir $@)SEDA_shapefiles_v21.zip
-	mapshaper $(dir $@)tmp/*.shp combine-files \
-		-each $(districts-geoid) \
-		-each $(districts-name) \
-		-filter-fields id,name \
-		-uniq id \
-		-o - combine-layers format=geojson > $@
-	rm -rf $(dir $@)tmp
+	csvcut --not-columns lat,lon,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state_name,state $< > $@
 
 ### Create data file with only data for tilesets
 build/geography/data/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	csvcut --not-columns lat,lon,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state_name,state $< > $@
+	csvcut --not-columns lat,lon,state_name,state $< > $@
 
 ### Creates counties / districts geojson, populated with data
 build/geography/%.geojson: build/geography/base/%.geojson build/geography/data/%.csv
@@ -262,9 +271,9 @@ build/source_data/%.csv:
 
 ### Deploy local source data to S3 bucket
 deploy_source_data:
-	for f in source_data/*.csv; do gzip $$f; done
-	for f in source_data/*.geojson; do gzip $$f; done
-	for f in source_data/*.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(SOURCE_VERSION)/$$(basename $$f) --acl=public-read; done
+	for f in build/source_data/*.csv; do gzip $$f; done
+	for f in build/source_data/*.geojson; do gzip $$f; done
+	for f in build/source_data/*.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
 
 
@@ -330,15 +339,15 @@ build/scatterplot/schools/reduced/schools.csv: build/schools.csv
 ###
 
 # columns to extract for search
-search_cols = id,name,state_name,lat,lon,all_sz
+search_cols = id,name,state_name,lat,lon,all_sz,all_avg,all_grd,all_coh
 
 ### Create search data for districts / counties
 build/search/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	csvcut -c $(search_cols) $< > $@
+	csvcut -c $(search_cols),all_ses $< > $@
 
 ### Create search data for schools (includes city name)
 build/search/schools.csv: build/schools.csv
 	mkdir -p $(dir $@)
-	csvcut -c $(search_cols),city $< > $@
+	csvcut -c $(search_cols),city,all_frl $< > $@
 
