@@ -1,12 +1,12 @@
 type,name,output_column,source_file,column,row_condition
 object,Identifier,id,SEDA_county_pool_GCS_v30.csv,countyid,
 object,Identifier,id,counties_cov.csv,countyid,
-float64,Socioeconomic Status,all_ses,counties_cov.csv,sesall,
-float64,Socioeconomic Status - white,w_ses,counties_cov.csv,seswht,
-float64,Socioeconomic Status - black,b_ses,counties_cov.csv,sesblk,
-float64,Socioeconomic Status - hispanic,h_ses,counties_cov.csv,seshsp,
-float64,Socioeconomic difference - white/black,wb_ses,counties_cov.csv,sesdiff_whtblk,
-float64,Socioeconomic difference - white/hispanic,wh_ses,counties_cov.csv,sesdiff_whthsp,
+float64,Socioeconomic Status,all_ses,counties_cov.csv,sesavgall,
+float64,Socioeconomic Status - white,w_ses,counties_cov.csv,sesavgwht,
+float64,Socioeconomic Status - black,b_ses,counties_cov.csv,sesavgblk,
+float64,Socioeconomic Status - hispanic,h_ses,counties_cov.csv,sesavghsp,
+float64,Socioeconomic difference - white/black,wb_ses,counties_cov.csv,sesavgwhtblk,
+float64,Socioeconomic difference - white/hispanic,wh_ses,counties_cov.csv,sesavgwhthsp,
 float64,Difference in poverty rates,wb_pov,counties_cov.csv,diffexplch_blkwht
 float64,Difference in poverty rates,wh_pov,counties_cov.csv,diffexplch_hspwht
 float64,Difference in poverty rates,np_pov,counties_cov.csv,diffexplch_flnfl

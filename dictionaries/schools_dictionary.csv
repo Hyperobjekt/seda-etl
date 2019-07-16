@@ -1,8 +1,6 @@
 name,output_column,source_file,column,type,row_condition
 Identifier,id,schools_cov.csv,ncessch,object,
-Percent free lunch,fl_pct,schools_cov.csv,perflu,float64,
-Percent reduced lunch,rl_pct,schools_cov.csv,perrlu,float64,
-Percent free or reduce lunch,frl_pct,schools_cov.csv,perfrlu,float64,
+Percent free or reduce lunch,all_frl,schools_cov.csv,perfrl,float64,
 Percent white students,w_pct,schools_cov.csv,perwht,float64,
 Percent indian students,i_pct,schools_cov.csv,perind,float64,
 Percent asian students,a_pct,schools_cov.csv,perasn,float64,
