@@ -16,8 +16,8 @@ counties_metrics = avg grd coh ses seg pov sz
 counties_dems = all w a b p f h m mf np pn wa wb wh fl
 
 # metrics available at the school level with paired demographics
-schools_metrics = pct avg grd coh sz
-schools_dems = all w a h b i fl rl frl
+schools_metrics = pct avg grd coh sz frl
+schools_dems = all w a h b i fl rl
 
 # variables to pull into individual files
 counties_vars = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m)))
