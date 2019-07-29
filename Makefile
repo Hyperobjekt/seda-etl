@@ -270,10 +270,14 @@ build/source_data/%.csv:
 	gunzip -c - > $@
 
 ### Deploy local source data to S3 bucket
-deploy_source_data:
+deploy_source_csv:
 	for f in build/source_data/*.csv; do gzip $$f; done
+	for f in build/source_data/*.csv.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+
+### Deploy local source data to S3 bucket
+deploy_source_geojson:
 	for f in build/source_data/*.geojson; do gzip $$f; done
-	for f in build/source_data/*.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+	for f in build/source_data/*.geojson.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
 
 
@@ -351,3 +355,30 @@ build/search/schools.csv: build/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols),city,all_frl $< > $@
 
+
+###
+### SIMILAR PLACES
+###
+
+similar: $(foreach t, $(geo_types), build/similar/$(t).csv)
+
+build/similar/%.csv: build/source_data/%_similar.csv
+	mkdir -p $(dir $@)
+	cat $< | \
+	sed '1s/.*/id,sim1,sim2,sim3,sim4,sim5,sim6,sim7,sim8,sim9,sim10/' | \
+	csvcut -c id,sim1,sim2,sim3,sim4,sim5 > $@
+	xsv partition -p 2 id $(dir $@)$* $@
+
+build/similar/schools.csv: build/source_data/schools_similar.csv
+	mkdir -p $(dir $@)
+	cat $< | \
+	sed '1s/.*/id,name,sim1,sim2,sim3,sim4,sim5,sim6,sim7,sim8,sim9,sim10/' | \
+	csvcut -c id,sim1,sim2,sim3,sim4,sim5 > $@
+	xsv partition -p 2 id $(dir $@)schools $@
+
+deploy_similar:
+	aws s3 cp ./build/similar s3://$(DATA_BUCKET)/build/$(BUILD_ID)/similar \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
