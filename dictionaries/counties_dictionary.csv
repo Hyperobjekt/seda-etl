@@ -7,12 +7,9 @@ float64,Socioeconomic Status - black,b_ses,counties_cov.csv,sesavgblk,
 float64,Socioeconomic Status - hispanic,h_ses,counties_cov.csv,sesavghsp,
 float64,Socioeconomic difference - white/black,wb_ses,counties_cov.csv,sesavgwhtblk,
 float64,Socioeconomic difference - white/hispanic,wh_ses,counties_cov.csv,sesavgwhthsp,
-float64,Difference in poverty rates,wb_pov,counties_cov.csv,diffexplch_blkwht
-float64,Difference in poverty rates,wh_pov,counties_cov.csv,diffexplch_hspwht
-float64,Difference in poverty rates,np_pov,counties_cov.csv,diffexplch_flnfl
-float64,Information index between schools: White/Black,wb_seg,counties_cov.csv,hswhtblk,
-float64,Information index between schools: White/Hispanic,wh_seg,counties_cov.csv,hswhthsp,
-float64,Information index between schools: FRPL/No FRPL,np_seg,counties_cov.csv,hsflnfl,
+float64,Information index between schools: White/Black,wb_seg,counties_cov.csv,segwhtblk,
+float64,Information index between schools: White/Hispanic,wh_seg,counties_cov.csv,segwhthsp,
+float64,Information index between schools: FRPL/No FRPL,np_seg,counties_cov.csv,segpoornonpoor,
 object,Identifier,id,SEDA_county_pool_GCS_v30.csv,countyid,subgroup == all
 object,State,state,SEDA_county_pool_GCS_v30.csv,stateabb,subgroup == all
 float64,County Size,all_sz,SEDA_county_pool_GCS_v30.csv,mn_asmts,subgroup == all
