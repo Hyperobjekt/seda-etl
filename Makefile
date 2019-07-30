@@ -185,12 +185,12 @@ build/geography/base/%.geojson:
 ### Create data file with only data for tilesets
 build/geography/data/districts.csv: build/districts.csv
 	mkdir -p $(dir $@)
-	csvcut --not-columns lat,lon,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state_name,state $< > $@
+	csvcut --not-columns lat,lon,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state_name,state,w_sz,a_sz,b_sz,wb_sz,h_sz,m_sz,f_sz,np_sz,p_sz,wa_sz,wh_sz,mf_sz,pn_sz $< > $@
 
 ### Create data file with only data for tilesets
 build/geography/data/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	csvcut --not-columns lat,lon,state_name,state $< > $@
+	csvcut --not-columns lat,lon,state_name,state,w_sz,a_sz,b_sz,wb_sz,h_sz,m_sz,f_sz,np_sz,p_sz,wa_sz,wh_sz,mf_sz,pn_sz $< > $@
 
 ### Creates counties / districts geojson, populated with data
 build/geography/%.geojson: build/geography/base/%.geojson build/geography/data/%.csv
