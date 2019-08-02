@@ -4,6 +4,22 @@ import csv
 import pandas as pd
 import numpy as np
 
+def format_avg(val):
+  try:
+    num = '{:.2f}'.format(float(val))
+  except ValueError:
+    num = -9999
+  finally:
+    return num
+
+def format_sz(val):
+  try:
+    num = '{:.0f}'.format(float(val))
+  except ValueError:
+    num = -9999
+  finally:
+    return num
+
 if __name__ == '__main__':
 
   BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -43,7 +59,9 @@ if __name__ == '__main__':
           'countyid': '{:0>5}'.format,
           'leaid': '{:0>7}'.format,
           'leaidC': '{:0>7}'.format,
-          'ncessch': '{:0>12}'.format
+          'ncessch': '{:0>12}'.format,
+          'mn_asmts': format_sz,
+          'mn_avg_eb': format_avg,
         }
       )
     )
