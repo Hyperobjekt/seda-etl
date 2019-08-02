@@ -46,7 +46,7 @@ def clean_city_name(df, col='city'):
   df[col] = df[col].str.title()
   return df
 
-def clean_numbers(df, precision=2):
+def clean_numbers(df, precision=3):
   """Return data frame with "unavailable" numeric value removed
   and rounded numbers
   """
@@ -54,7 +54,7 @@ def clean_numbers(df, precision=2):
   df = df.round(precision)
   return df
 
-def clean_data(df, region, precision=2):
+def clean_data(df, region, precision=3):
   """Strips unavailable data markers, round number cols and 
   cleans up names.
   """

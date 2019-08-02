@@ -12,17 +12,20 @@ districts_main = SEDA_geodist_pool_GCS_v30.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong_city.csv
 
 # metrics available at the county level with paired demographics
-counties_metrics = avg grd coh ses seg pov sz
-counties_dems = all w a b p f h m mf np pn wa wb wh fl
+counties_metrics = avg grd coh ses seg
+counties_dems = all w a b p f h m mf np pn wa wb wh
 
 # metrics available at the school level with paired demographics
-schools_metrics = pct avg grd coh sz frl
-schools_dems = all w a h b i fl rl
+schools_metrics = pct avg grd coh frl
+schools_dems = all w a h b i
+
+int_cols = a_sz w_sz all_sz b_sz h_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz mf_sz pn_sz
+float_cols = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m))) $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
 
 # variables to pull into individual files
-counties_vars = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m)))
+counties_vars = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m))) $(int_cols)
 districts_vars = $(counties_vars)
-schools_vars = $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
+schools_vars = $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m))) all_sz
 
 # variables containing place meta data
 meta_vars = id,name,lat,lon,all_sz
@@ -116,10 +119,8 @@ clean:
 ### Creates the .mbtiles files for the tilesets, populated with data
 ###
 
-# cols that get converted to float in the tileset
-numeric_cols = $(counties_vars) $(schools_vars)
 # attribute type flags for tippecanoe
-attr_types = --attribute-type=id:string $(foreach t, $(numeric_cols), --attribute-type=$(t):float)
+attr_types = --attribute-type=id:string $(foreach t, $(float_cols), --attribute-type=$(t):float) $(foreach t, $(int_cols), --attribute-type=$(t):int)
 # tippecanoe options that apply to all tilesets
 tippecanoe_default_opts = --maximum-tile-bytes=500000 --minimum-zoom=2
 # tippecanoe options that apply to polygon layers

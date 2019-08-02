@@ -63,7 +63,7 @@ def create_pair_csv(region, df, xVar, yVar, zVar, radius):
   # convert tuples to new csv
   output_file = os.path.join(OUTPUT_DIR, xVar + '-' + yVar + '.csv')
   output_df = pd.DataFrame(subset)
-  output_df = output_df.round(2)
+  output_df = output_df.round(3)
   try:
     output_df.columns = output_cols
     output_df.to_csv(output_file, index=False)
