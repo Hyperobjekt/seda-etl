@@ -56,7 +56,7 @@ help: Makefile
 	perl -ne '/^#### / && s/^#### //g && print' $<
 
 #### all                        : Build everything
-all: geojson tiles data search scatterplot
+all: geojson tiles data search scatterplot similar
 
 #### deploy_all                 : Deploy everything, except search
 deploy_all: deploy_tilesets deploy_scatterplot
@@ -158,7 +158,11 @@ districts-name = "this.properties.name = this.properties.NAME"
 build/geography/base/%.geojson:
 	mkdir -p $(dir $@)
 	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$*.geojson.gz | \
-	gunzip -c - > $@
+	gunzip -c - > build/geography/base/tmp.geojson
+	node ./scripts/update_geojson.js $* build/geography/base/tmp.geojson $@
+	echo "{ \"type\":\"FeatureCollection\", \"features\": " | cat - $@ > build/geography/base/tmp.geojson
+	echo "}" >> build/geography/base/tmp.geojson
+	mv build/geography/base/tmp.geojson $@
 
 ### TO FETCH COUNTIES FROM CENSUS:
 # wget --no-use-server-timestamps -np -nd -r -P $(dir $@)tmp -A '$(counties-pattern)' $(census_ftp_base)
@@ -366,14 +370,14 @@ similar: $(foreach t, $(geo_types), build/similar/$(t).csv)
 build/similar/%.csv: build/source_data/%_similar.csv
 	mkdir -p $(dir $@)
 	cat $< | \
-	sed '1s/.*/id,sim1,sim2,sim3,sim4,sim5,sim6,sim7,sim8,sim9,sim10/' | \
+	sed '1s/.*/id,sim1,sim2,sim3,sim4,sim5/' | \
 	csvcut -c id,sim1,sim2,sim3,sim4,sim5 > $@
 	xsv partition -p 2 id $(dir $@)$* $@
 
 build/similar/schools.csv: build/source_data/schools_similar.csv
 	mkdir -p $(dir $@)
 	cat $< | \
-	sed '1s/.*/id,name,sim1,sim2,sim3,sim4,sim5,sim6,sim7,sim8,sim9,sim10/' | \
+	sed '1s/.*/id,sim1,sim2,sim3,sim4,sim5/' | \
 	csvcut -c id,sim1,sim2,sim3,sim4,sim5 > $@
 	xsv partition -p 2 id $(dir $@)schools $@
 
