@@ -9,6 +9,7 @@ fi
 mkdir -p build/source_data
 unzip $1 -d build/source_data
 rm build/source_data/*.dta build/source_data/*.xlsx build/source_data/*.do build/source_data/*_v22.csv
+rm build/source_data/*Erin\ F*.csv
 rm -rf build/source_data/functions
 mv build/source_data/schoolMatch.csv build/source_data/schools_similar.csv
 mv build/source_data/DistrictMatch.csv build/source_data/districts_similar.csv
