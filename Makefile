@@ -235,6 +235,10 @@ build/schools.csv: build/from_dict/schools.csv
 	cat $< | \
 	python3 scripts/clean_data.py schools > $@
 
+build/clean/%.csv: build/%.csv
+	mkdir -p $(dir $@)
+	cat $< | python3 scripts/strip_values.py $* > $@
+
 ### Extracts data based on the dictionary file for counties / districts / schools
 .SECONDEXPANSION:
 build/from_dict/%.csv: build/source_data/$$*_cov.csv build/source_data/$$($$*_main) build/source_data/district_grade_estimates.csv
@@ -300,12 +304,12 @@ deploy_source_geojson:
 point_radius = 0.01
 
 ### Create the meta data file for districts / counties
-build/scatterplot/meta/%.csv: build/%.csv
+build/scatterplot/meta/%.csv: build/clean/%.csv
 	mkdir -p $(dir $@)
 	cat $< | csvcut -c $(meta_vars) > $@
 
 ### Create the master meta data file for schools, and also split by state
-build/scatterplot/meta/schools.csv: build/schools.csv
+build/scatterplot/meta/schools.csv: build/clean/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(meta_vars) $< > $@
 	xsv partition -p 2 id $(dir $@)schools $@
@@ -313,21 +317,21 @@ build/scatterplot/meta/schools.csv: build/schools.csv
 ### Create the single variable file for districts (e.g. all_avg)
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/districts/%.csv: build/districts.csv
+build/scatterplot/districts/%.csv: build/clean/districts.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< > $@ || true
 
 ### Create the single variable file for counties (e.g. all_avg)
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/counties/%.csv: build/counties.csv
+build/scatterplot/counties/%.csv: build/clean/counties.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< > $@ || true
 
 ### Create the single variable file for schools and also split by state
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/schools/%.csv: build/schools.csv
+build/scatterplot/schools/%.csv: build/clean/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< > $@ || true
 	xsv partition --filename {}/$*.csv --prefix-length 2 id $(dir $@) $@ || true
@@ -351,12 +355,12 @@ build/scatterplot/schools/reduced/schools.csv: build/schools.csv
 search_cols = id,name,state_name,lat,lon,all_sz,all_avg,all_grd,all_coh
 
 ### Create search data for districts / counties
-build/search/%.csv: build/%.csv
+build/search/%.csv: build/clean/%.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols),all_ses $< > $@
 
 ### Create search data for schools (includes city name)
-build/search/schools.csv: build/schools.csv
+build/search/schools.csv: build/clean/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols),city,all_frl $< > $@
 

@@ -32,7 +32,7 @@ def clean_name(df, region, col='name'):
   """Removes rows with no name, and formats school names
   if the region is schools.
   """
-  df = df.loc[df[col] != '-9999'].copy()
+  df = df.loc[df[col] != '-999'].copy()
   df.dropna(subset=[col],inplace=True)
   if region == 'schools':
     df[col] = df[col].str.replace('elem sch$|el$', 'elementary', case=False)
@@ -50,7 +50,7 @@ def clean_numbers(df, precision=3):
   """Return data frame with "unavailable" numeric value removed
   and rounded numbers
   """
-  df = df.replace(-9999, np.nan)
+  # df = df.replace(-999, np.nan)
   df = df.round(precision)
   return df
 

@@ -8,7 +8,7 @@ def format_avg(val):
   try:
     num = '{:.2f}'.format(float(val))
   except ValueError:
-    num = -9999
+    num = -999
   finally:
     return num
 
@@ -16,7 +16,7 @@ def format_sz(val):
   try:
     num = '{:.0f}'.format(float(val))
   except ValueError:
-    num = -9999
+    num = -999
   finally:
     return num
 
@@ -128,7 +128,7 @@ if 'lat' in output_df.columns:
   output_df = output_df[pd.notnull(output_df['lat'])]
 
 # fill in missing numeric values
-output_df = output_df.fillna(-9999)
+output_df = output_df.fillna(-999)
 output_df = output_df.round(3)
 output_df = output_df.reset_index()
 output_df[['fid']] = output_df[['index']].apply(pd.to_numeric)
