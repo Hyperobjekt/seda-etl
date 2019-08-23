@@ -319,21 +319,21 @@ build/scatterplot/meta/schools.csv: build/clean/schools.csv
 ###       so it doesn't break the build chain
 build/scatterplot/districts/%.csv: build/clean/districts.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$* $< > $@ || true
+	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 
 ### Create the single variable file for counties (e.g. all_avg)
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
 build/scatterplot/counties/%.csv: build/clean/counties.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$* $< > $@ || true
+	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 
 ### Create the single variable file for schools and also split by state
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
 build/scatterplot/schools/%.csv: build/clean/schools.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$* $< > $@ || true
+	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 	xsv partition --filename {}/$*.csv --prefix-length 2 id $(dir $@) $@ || true
 
 ### Create reduced school data sets for each variable pair based on a point radius
