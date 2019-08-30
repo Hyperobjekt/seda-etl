@@ -391,3 +391,23 @@ deploy_similar:
 		--acl=public-read \
 		--region=us-east-1 \
 		--cache-control max-age=2628000
+
+###
+### FLAGGED SCHOOLS
+###
+
+flags = sped gifted lep
+flagged: $(foreach t, $(flags), build/flagged/$(t).csv)
+
+build/flagged/%.csv: build/source_data/flag_%.csv
+	mkdir -p $(dir $@)
+	csvgrep $< -c 2 -m 1 > $@
+
+deploy_flagged:
+	aws s3 cp ./build/flagged s3://$(DATA_BUCKET)/build/$(BUILD_ID)/flagged \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/build/$(BUILD_ID)/flagged/*"
