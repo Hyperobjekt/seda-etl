@@ -97,6 +97,8 @@ deploy_scatterplot:
 		--acl=public-read \
 		--region=us-east-1 \
 		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(BUILD_ID)/scatterplot/*"
 
 #### search                     : Create data files containing data for search
 search:  $(foreach t, $(geo_types), build/search/$(t).csv)
@@ -391,6 +393,8 @@ deploy_similar:
 		--acl=public-read \
 		--region=us-east-1 \
 		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(BUILD_ID)/similar/*"
 
 ###
 ### FLAGGED SCHOOLS
@@ -410,4 +414,4 @@ deploy_flagged:
 		--region=us-east-1 \
 		--cache-control max-age=2628000
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
-  	--paths "/build/$(BUILD_ID)/flagged/*"
+  	--paths "/$(BUILD_ID)/flagged/*"
