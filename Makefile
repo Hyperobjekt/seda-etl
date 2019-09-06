@@ -197,7 +197,7 @@ build/geography/data/districts.csv: build/districts.csv
 ### Create data file with only data for tilesets
 build/geography/data/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	csvcut --not-columns lat,lon,state_name,state $< > $@
+	csvcut --not-columns lat,lon,state_name,state,featname $< > $@
 
 ### Creates counties / districts geojson, populated with data
 build/geography/%.geojson: build/geography/base/%.geojson build/geography/data/%.csv
@@ -254,7 +254,7 @@ build/centers/%.csv: build/geography/base/%.geojson
 	$(geojson_label_cmd) --style largest $< | \
 	in2csv --format json -k features | \
 	csvcut -c properties/id,properties/name,geometry/coordinates/0,geometry/coordinates/1 | \
-	sed '1s/.*/id,name,lon,lat/' | \
+	sed '1s/.*/id,featname,lon,lat/' | \
 	python3 scripts/clean_data.py $* > $@
 
 ### Builds a csv file containing only IDs for the given region, used for joins
@@ -401,11 +401,11 @@ deploy_similar:
 ###
 
 flags = sped gifted lep
-flagged: $(foreach t, $(flags), build/flagged/$(t).csv)
+flagged: $(foreach t, $(flags), build/flagged/$(t).json)
 
-build/flagged/%.csv: build/source_data/flag_%.csv
+build/flagged/%.json: build/source_data/flag_%.csv
 	mkdir -p $(dir $@)
-	csvgrep $< -c 2 -m 1 > $@
+	csvgrep $< -c 2 -m 1 | python3 ./scripts/ncessch_to_json_array.py > $@
 
 deploy_flagged:
 	aws s3 cp ./build/flagged s3://$(DATA_BUCKET)/build/$(BUILD_ID)/flagged \

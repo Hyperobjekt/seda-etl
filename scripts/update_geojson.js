@@ -4,6 +4,7 @@ const fs = require('fs');
 const JSONStream = require('JSONStream');
 const cmdArgs = process.argv.slice(2);
 const path = require('path');
+const dissolve = require('./dissolve_features.js');
 
 if (cmdArgs.length !== 3) {
   console.error('ERROR: must provide region, input file, output file');
@@ -14,6 +15,7 @@ const region = cmdArgs[0];
 const inFile = cmdArgs[1];
 const outFile = cmdArgs[2];
 
+// attribute updates for provided identifiers
 const UPDATES = {
   '46113': {
     id: '46102',
@@ -21,6 +23,10 @@ const UPDATES = {
   },
   '4665460': {
     name: 'Oglala Lakota County 65-1'
+  },
+  '4703810': {
+    id: '4700148',
+    name: 'Shelby County'
   }
 }
 
@@ -35,7 +41,12 @@ const updateFeature = (feature) => {
   return feature;
 }
 
-const streamParse = JSONStream.parse('features.*', updateFeature)
+const updateDataAndGeo = (feature) => {
+  feature = updateFeature(feature);
+  return dissolve.dissolveFeatures(feature)
+}
+
+const streamParse = JSONStream.parse('features.*', updateDataAndGeo)
 const out = fs.createWriteStream(outFile);
 
 fs.createReadStream(inFile)

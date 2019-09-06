@@ -1,5 +1,6 @@
 type,name,output_column,source_file,column,row_condition
 object,Identifier,id,SEDA_county_pool_GCS_v30.csv,countyid,
+object,Identifier,name,SEDA_county_pool_GCS_v30.csv,countyname,
 object,Identifier,id,counties_cov.csv,countyid,
 float64,Socioeconomic Status,all_ses,counties_cov.csv,sesavgall,
 float64,Socioeconomic Status - white,w_ses,counties_cov.csv,sesavgwht,

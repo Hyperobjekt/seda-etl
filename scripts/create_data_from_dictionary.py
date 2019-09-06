@@ -72,6 +72,7 @@ if __name__ == '__main__':
   #     - pull the columns from the file
   output_a_df_list = []
   for i, df in enumerate(data_df_list):
+    # get dict rows that reference this file and have no conditions
     copy_df = dict_df.loc[
       (dict_df['source_file'] == files[i]) & (dict_df['row_condition'] == '')
     ]

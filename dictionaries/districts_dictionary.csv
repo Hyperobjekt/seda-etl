@@ -9,6 +9,8 @@ float64,Socioeconomic difference - white/hispanic,wh_ses,districts_cov.csv,sesav
 float64,Information index between schools: White/Black,wb_seg,districts_cov.csv,segwhtblk,
 float64,Information index between schools: White/Hispanic,wh_seg,districts_cov.csv,segwhthsp,
 float64,Information index between schools: FRPL/No FRPL,np_seg,districts_cov.csv,segpoornonpoor,
+object,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,
+object,Name,name,SEDA_geodist_pool_GCS_v30.csv,leaname,
 object,Identifier,id,SEDA_geodist_pool_GCS_v30.csv,leaidC,subgroup == all
 object,State,state,SEDA_geodist_pool_GCS_v30.csv,stateabb,subgroup == all
 float64,District Size,all_sz,SEDA_geodist_pool_GCS_v30.csv,mn_asmts,subgroup == all
