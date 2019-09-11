@@ -11,6 +11,9 @@ counties_main = SEDA_county_pool_GCS_v30.csv
 districts_main = SEDA_geodist_pool_GCS_v30.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong_city.csv
 
+# Shapefile
+districts_shapefile = 2016.geojson.gz
+
 # metrics available at the county level with paired demographics
 counties_metrics = avg grd coh ses seg
 counties_dems = all w a b p f h m mf np pn wa wb wh
@@ -177,17 +180,16 @@ build/geography/base/%.geojson:
 # rm -rf $(dir $@)tmp
 
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
-# build/geography/base/districts.geojson:
-# 	mkdir -p $(dir $@)
-# 	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/SEDA_shapefiles_v21.zip $(dir $@)
-# 	unzip -d $(dir $@)tmp $(dir $@)SEDA_shapefiles_v21.zip
-# 	mapshaper $(dir $@)tmp/*.shp combine-files \
-# 		-each $(districts-geoid) \
-# 		-each $(districts-name) \
-# 		-filter-fields id,name \
-# 		-uniq id \
-# 		-o - combine-layers format=geojson > $@
-# 	rm -rf $(dir $@)tmp
+build/geography/base/districts.geojson:
+	mkdir -p $(dir $@)/tmp
+	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$(districts_shapefile) | \
+	gunzip -c - > $(dir $@)tmp/2016.geojson
+	mapshaper $(dir $@)tmp/2016.geojson combine-files \
+		-each $(districts-geoid) \
+		-each $(districts-name) \
+		-filter-fields id,name \
+		-uniq id \
+		-o - combine-layers format=geojson > $@
 
 ### Create data file with only data for tilesets
 build/geography/data/districts.csv: build/districts.csv
@@ -288,8 +290,11 @@ deploy_source_csv:
 ### Deploy local source data to S3 bucket
 deploy_source_geojson:
 	for f in build/source_data/*.geojson; do gzip $$f; done
-	for f in build/source_data/*.geojson.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+	for f in build/source_data/*.geojson.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
+
+deploy_source_zip:
+	for f in build/source_data/*.zip; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
 
 ###
