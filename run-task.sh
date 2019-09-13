@@ -23,4 +23,8 @@ else
     aws configure set default.region us-east-1
 fi
 
-make $1
+if [[ $1 == *config* ]]; then
+  printf '%s\n' "configured" >&2
+else
+  make $1
+fi
