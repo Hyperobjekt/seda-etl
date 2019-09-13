@@ -12,7 +12,7 @@ districts_main = SEDA_geodist_pool_GCS_v30.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong_city.csv
 
 # Shapefile
-districts_shapefile = 2016.geojson.gz
+districts_shapefile = 2016_unified_elementary.zip
 
 # metrics available at the county level with paired demographics
 counties_metrics = avg grd coh ses seg
@@ -182,9 +182,9 @@ build/geography/base/%.geojson:
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
 build/geography/base/districts.geojson:
 	mkdir -p $(dir $@)/tmp
-	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$(districts_shapefile) | \
-	gunzip -c - > $(dir $@)tmp/2016.geojson
-	mapshaper $(dir $@)tmp/2016.geojson combine-files \
+	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$(districts_shapefile) $(dir $@)
+	unzip -d $(dir $@)tmp $(dir $@)$(districts_shapefile)
+	mapshaper $(dir $@)tmp/*.shp combine-files \
 		-each $(districts-geoid) \
 		-each $(districts-name) \
 		-filter-fields id,name \
