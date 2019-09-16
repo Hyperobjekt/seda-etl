@@ -37,7 +37,7 @@ def clean_name(df, region, col='name'):
   if region == 'schools':
     df[col] = df[col].str.replace('elem sch$|el$', 'elementary', case=False)
     df[col] = df[col].str.replace(' sch$| school$', '', case=False)
-  df[col] = df[col].str.title()
+  # df[col] = df[col].str.title()
   return df
 
 def clean_city_name(df, col='city'):
