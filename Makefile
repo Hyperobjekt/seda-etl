@@ -59,7 +59,7 @@ help: Makefile
 	perl -ne '/^#### / && s/^#### //g && print' $<
 
 #### all                        : Build everything
-all: geojson tiles data search scatterplot similar
+all: geojson tiles data search scatterplot similar flagged
 
 #### deploy_all                 : Deploy everything, except search
 deploy_all: deploy_tilesets deploy_scatterplot
@@ -180,16 +180,16 @@ build/geography/base/%.geojson:
 # rm -rf $(dir $@)tmp
 
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
-build/geography/base/districts.geojson:
-	mkdir -p $(dir $@)/tmp
-	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$(districts_shapefile) $(dir $@)
-	unzip -d $(dir $@)tmp $(dir $@)$(districts_shapefile)
-	mapshaper $(dir $@)tmp/*.shp combine-files \
-		-each $(districts-geoid) \
-		-each $(districts-name) \
-		-filter-fields id,name \
-		-uniq id \
-		-o - combine-layers format=geojson > $@
+# build/geography/base/districts.geojson:
+# 	mkdir -p $(dir $@)/tmp
+# 	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$(districts_shapefile) $(dir $@)
+# 	unzip -d $(dir $@)tmp $(dir $@)$(districts_shapefile)
+# 	mapshaper $(dir $@)tmp/*.shp combine-files \
+# 		-each $(districts-geoid) \
+# 		-each $(districts-name) \
+# 		-filter-fields id,name \
+# 		-uniq id \
+# 		-o - combine-layers format=geojson > $@
 
 ### Create data file with only data for tilesets
 build/geography/data/districts.csv: build/districts.csv

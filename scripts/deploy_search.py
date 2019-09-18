@@ -21,10 +21,32 @@ if __name__ == '__main__':
         },
         row['lat'] = float(row['lat'])
         row['lon'] = float(row['lon'])
+        
         if row['all_sz']:
           row['all_sz'] = float(row['all_sz'])
         else:
           row['all_sz'] = 0
+        
+        if row['all_avg']:
+          row['all_avg'] = float(row['all_avg'])
+        else:
+          row['all_avg'] = -999
+
+        if row['all_grd']:
+          row['all_grd'] = float(row['all_grd'])
+        else:
+          row['all_grd'] = -999
+
+        if row['all_coh']:
+          row['all_coh'] = float(row['all_coh'])
+        else:
+          row['all_coh'] = -999
+
+        if row['all_ses']:
+          row['all_ses'] = float(row['all_ses'])
+        else:
+          row['all_ses'] = -999
+
         data.append(row)
       except ValueError as e:
         print('Invalid lat or lon, skipping', row['name'])
