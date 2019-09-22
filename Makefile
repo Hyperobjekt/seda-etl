@@ -51,7 +51,7 @@ null :=
 space := $(null) $(null)
 comma := ,
 
-.PHONY: help tiles data search geojson scatterplot deploy_search deploy_tilesets deploy_scatterplot deploy_all
+.PHONY: help tiles data search geojson scatterplot deploy_search deploy_tilesets deploy_scatterplot deploy_all deploy_flagged deploy_similar
 
 # Based on https://swcarpentry.github.io/make-novice/08-self-doc/
 #### help                       : Print help
@@ -61,15 +61,8 @@ help: Makefile
 #### all                        : Build everything
 all: geojson tiles data search scatterplot similar flagged
 
-#### deploy_all                 : Deploy everything, except search
-deploy_all: deploy_tilesets deploy_scatterplot
-
-#### tiles:                     : Create mbtiles for all regions
+#### tiles                      : Create mbtiles for all regions
 tiles: $(foreach t, $(geo_types), build/tiles/$(t).mbtiles)
-
-#### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
-deploy_tilesets:
-	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(BUILD_ID); done
 
 #### geojson                    : Create GeoJSON files with data for all regions
 geojson: $(foreach t, $(geo_types), build/geography/$(t).geojson)
@@ -81,40 +74,20 @@ data: $(foreach t, $(geo_types), build/$(t).csv)
 export_data: data geojson
 	python3 scripts/create_export_data.py
 
-#### deploy_export_data         : Deploy the csv / geojson exports
-deploy_export_data:
-	aws s3 cp ./build/export s3://$(EXPORT_DATA_BUCKET)/$(DATA_VERSION) \
-		--recursive \
-		--acl=public-read \
-		--region=us-east-1 \
-		--cache-control max-age=2628000
-
 #### scatterplot                : Create all individual var files used for scatterplots
 scatterplot: $(meta_files) $(individual_var_files) $(reduced_pair_files)
 	find build/scatterplot/ -type f -size 0 -delete
 
-#### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
-deploy_scatterplot:
-	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
-		--recursive \
-		--acl=public-read \
-		--region=us-east-1 \
-		--cache-control max-age=2628000
-	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
-  	--paths "/$(BUILD_ID)/scatterplot/*"
-
 #### search                     : Create data files containing data for search
 search:  $(foreach t, $(geo_types), build/search/$(t).csv)
-
-#### deploy_search              : Algolia deploy (WARNING: 100,000+ records, costs $$)
-deploy_search:
-	python3 scripts/deploy_search.py ./build/search/counties.csv counties
-	python3 scripts/deploy_search.py ./build/search/districts.csv districts
-	python3 scripts/deploy_search.py ./build/search/schools.csv schools
 
 #### clean                      : Remove files
 clean:
 	rm -rf build
+
+#### deploy_all                 : Deploy all data to S3 / CloudFront endpoint
+deploy_all: deploy_tilesets deploy_scatterplot deploy_similar deploy_flagged
+
 
 
 ###
@@ -269,32 +242,17 @@ build/ids/%.csv: build/source_data/$$($$*_main)
 	sed '1s/.*/id/' > $@
 
 
-
 ###
 ### SOURCE DATA
 ###
 ### handles fetching and deploying source data
 ###
 
-### Fetch source data from S3 bucket
+### Fetch source data used for the build from S3 bucket
 build/source_data/%.csv:
 	mkdir -p $(dir $@)
 	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$*.csv.gz | \
 	gunzip -c - > $@
-
-### Deploy local source data to S3 bucket
-deploy_source_csv:
-	for f in build/source_data/*.csv; do gzip $$f; done
-	for f in build/source_data/*.csv.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
-
-### Deploy local source data to S3 bucket
-deploy_source_geojson:
-	for f in build/source_data/*.geojson; do gzip $$f; done
-	for f in build/source_data/*.geojson.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
-
-
-deploy_source_zip:
-	for f in build/source_data/*.zip; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
 
 ###
@@ -392,14 +350,6 @@ build/similar/schools.csv: build/source_data/schools_similar.csv
 	csvcut -c id,sim1,sim2,sim3,sim4,sim5 > $@
 	xsv partition -p 2 id $(dir $@)schools $@
 
-deploy_similar:
-	aws s3 cp ./build/similar s3://$(DATA_BUCKET)/build/$(BUILD_ID)/similar \
-		--recursive \
-		--acl=public-read \
-		--region=us-east-1 \
-		--cache-control max-age=2628000
-	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
-  	--paths "/$(BUILD_ID)/similar/*"
 
 ###
 ### FLAGGED SCHOOLS
@@ -412,6 +362,68 @@ build/flagged/%.json: build/source_data/flag_%.csv
 	mkdir -p $(dir $@)
 	csvgrep $< -c 2 -m 1 | python3 ./scripts/ncessch_to_json_array.py > $@
 
+
+###
+### DEPLOYMENT
+###
+
+#### deploy_service             : Update export service (updates to use latest image from dockerhub)
+deploy_service:
+	aws ecs update-service --service edop-pdf-container-service --force-new-deployment
+
+#### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
+deploy_tilesets:
+	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(BUILD_ID); done
+
+#### deploy_export_data         : Deploy the csv / geojson exports
+deploy_export_data:
+	aws s3 cp ./build/export s3://$(EXPORT_DATA_BUCKET)/$(DATA_VERSION) \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+
+#### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
+deploy_scatterplot:
+	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(BUILD_ID)/scatterplot/*"
+
+#### deploy_search              : Algolia deploy (WARNING: 100,000+ records, costs $$)
+deploy_search:
+	python3 scripts/deploy_search.py ./build/search/counties.csv counties
+	python3 scripts/deploy_search.py ./build/search/districts.csv districts
+	python3 scripts/deploy_search.py ./build/search/schools.csv schools
+
+#### deploy_source_csv          : Deploy local source csv data to S3 bucket
+deploy_source_csv:
+	for f in build/source_data/*.csv; do gzip $$f; done
+	for f in build/source_data/*.csv.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+
+#### deploy_source_geojson      : Deploy local source geojson data to S3 bucket
+deploy_source_geojson:
+	for f in build/source_data/*.geojson; do gzip $$f; done
+	for f in build/source_data/*.geojson.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+
+#### deploy_source_zip          : Deploy local source zip data to S3 bucket
+deploy_source_zip:
+	for f in build/source_data/*.zip; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+
+#### deploy_similar             : Deploy similar locations csv to S3 and invalidate CloudFront cache
+deploy_similar:
+	aws s3 cp ./build/similar s3://$(DATA_BUCKET)/build/$(BUILD_ID)/similar \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(BUILD_ID)/similar/*"
+
+#### deploy_flagged             : Deploy school flags to S3 and invalidate CloudFront cache
 deploy_flagged:
 	aws s3 cp ./build/flagged s3://$(DATA_BUCKET)/build/$(BUILD_ID)/flagged \
 		--recursive \
@@ -420,3 +432,4 @@ deploy_flagged:
 		--cache-control max-age=2628000
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
   	--paths "/$(BUILD_ID)/flagged/*"
+
