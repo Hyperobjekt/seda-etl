@@ -42,10 +42,10 @@ if __name__ == '__main__':
         else:
           row['all_coh'] = -999
 
-        if row['all_ses']:
-          row['all_ses'] = float(row['all_ses'])
-        else:
-          row['all_ses'] = -999
+        # if row['all_ses']:
+        #   row['all_ses'] = float(row['all_ses'])
+        # else:
+        #   row['all_ses'] = -999
 
         data.append(row)
       except ValueError as e:

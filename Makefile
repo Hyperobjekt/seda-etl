@@ -369,7 +369,7 @@ build/flagged/%.json: build/source_data/flag_%.csv
 
 #### deploy_service             : Update export service (updates to use latest image from dockerhub)
 deploy_service:
-	aws ecs update-service --service edop-pdf-container-service --force-new-deployment
+	aws ecs update-service --cluster edop-pdf-cluster --service edop-pdf-container-service --force-new-deployment
 
 #### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
 deploy_tilesets:
