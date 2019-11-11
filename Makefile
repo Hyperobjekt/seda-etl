@@ -15,7 +15,7 @@ schools_main = SEDA_school_pool_GCS_v30_latlong_city.csv
 districts_shapefile = 2016_unified_elementary.zip
 
 # metrics available at the county level with paired demographics
-counties_metrics = avg grd coh ses seg
+counties_metrics = avg grd coh ses seg min
 counties_dems = all w a b p f h m mf np pn wa wb wh
 
 # metrics available at the school level with paired demographics
