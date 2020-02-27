@@ -34,6 +34,11 @@ float64,Hispanic Sample Size,h_sz,SEDA_county_pool_GCS_v30.csv,mn_asmts,subgroup
 float64,Hispanic average test score,h_avg,SEDA_county_pool_GCS_v30.csv,mn_avg_eb,subgroup == hsp
 float64,Hispanic growth in grades,h_grd,SEDA_county_pool_GCS_v30.csv,mn_grd_eb,subgroup == hsp
 float64,Hispanic trend in test scores,h_coh,SEDA_county_pool_GCS_v30.csv,mn_coh_eb,subgroup == hsp
+object,Identifier,id,SEDA_county_pool_GCS_v30.csv,countyid,subgroup == nam
+float64,Native American Sample Size,i_sz,SEDA_county_pool_GCS_v30.csv,mn_asmts,subgroup == nam
+float64,Native American average test score,i_avg,SEDA_county_pool_GCS_v30.csv,mn_avg_eb,subgroup == nam
+float64,Native American growth in grades,i_grd,SEDA_county_pool_GCS_v30.csv,mn_grd_eb,subgroup == nam
+float64,Native American trend in test scores,i_coh,SEDA_county_pool_GCS_v30.csv,mn_coh_eb,subgroup == nam
 object,Identifier,id,SEDA_county_pool_GCS_v30.csv,countyid,subgroup == asn
 float64,Asian Sample Size,a_sz,SEDA_county_pool_GCS_v30.csv,mn_asmts,subgroup == asn
 float64,Asian average test score,a_avg,SEDA_county_pool_GCS_v30.csv,mn_avg_eb,subgroup == asn
