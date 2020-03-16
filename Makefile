@@ -8,21 +8,21 @@ schools_id = ncessch
 
 # master data file names
 counties_main = SEDA_county_pool_GCS_v30.csv
-districts_main = SEDA_geodist_pool_GCS_v30.csv
+districts_main = SEDA_geodist_pool_GCS_v40.csv
 schools_main = SEDA_school_pool_GCS_v30_latlong_city.csv
 
 # Shapefile
-districts_shapefile = 2016_unified_elementary.zip
+districts_shapefile = 2018_unified_elementary.zip
 
 # metrics available at the county level with paired demographics
 counties_metrics = avg grd coh ses seg min
-counties_dems = all w a b p f h m mf np pn wa wb wh
+counties_dems = all w a b p f h i m mf np pn wa wb wh
 
 # metrics available at the school level with paired demographics
 schools_metrics = pct avg grd coh frl
 schools_dems = all w a h b i
 
-int_cols = a_sz w_sz all_sz b_sz h_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz mf_sz pn_sz
+int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz mf_sz pn_sz
 float_cols = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m))) $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
 
 # variables to pull into individual files
@@ -44,7 +44,7 @@ reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
 
 # use this build ID if one is not set in the environment variables
 BUILD_ID?=dev
-DATA_VERSION?=0.0.2
+DATA_VERSION?=1.1.0
 
 # For comma-delimited list
 null :=
@@ -153,16 +153,16 @@ build/geography/base/%.geojson:
 # rm -rf $(dir $@)tmp
 
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
-# build/geography/base/districts.geojson:
-# 	mkdir -p $(dir $@)/tmp
-# 	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$(districts_shapefile) $(dir $@)
-# 	unzip -d $(dir $@)tmp $(dir $@)$(districts_shapefile)
-# 	mapshaper $(dir $@)tmp/*.shp combine-files \
-# 		-each $(districts-geoid) \
-# 		-each $(districts-name) \
-# 		-filter-fields id,name \
-# 		-uniq id \
-# 		-o - combine-layers format=geojson > $@
+build/geography/base/districts.geojson:
+	mkdir -p $(dir $@)/tmp
+	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$(districts_shapefile) $(dir $@)
+	unzip -d $(dir $@)tmp $(dir $@)$(districts_shapefile)
+	mapshaper $(dir $@)tmp/*.shp combine-files \
+		-each $(districts-geoid) \
+		-each $(districts-name) \
+		-filter-fields id,name \
+		-uniq id \
+		-o - combine-layers format=geojson > $@
 
 ### Create data file with only data for tilesets
 build/geography/data/districts.csv: build/districts.csv
@@ -373,7 +373,7 @@ deploy_service:
 
 #### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
 deploy_tilesets:
-	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(BUILD_ID); done
+	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-v4-$(BUILD_ID); done
 
 #### deploy_export_data         : Deploy the csv / geojson exports
 deploy_export_data:
