@@ -86,6 +86,11 @@ float64,White / Hispanic Sample Size,wh_sz,SEDA_geodist_pool_GCS_v40.csv,mn_asmt
 float64,White / Hispanic Gap average test score,wh_avg,SEDA_geodist_pool_GCS_v40.csv,mn_avg_eb,subgroup == whg
 float64,White / Hispanic Gap growth in grades,wh_grd,SEDA_geodist_pool_GCS_v40.csv,mn_grd_eb,subgroup == whg
 float64,White / Hispanic Gap trend in test scores,wh_coh,SEDA_geodist_pool_GCS_v40.csv,mn_coh_eb,subgroup == whg
+object,Identifier,id,SEDA_geodist_pool_GCS_v40.csv,leaidC,subgroup == wng
+float64,White / Native American Sample Size,wi_sz,SEDA_geodist_pool_GCS_v40.csv,mn_asmts,subgroup == wng
+float64,White / Native American Gap average test score,wi_avg,SEDA_geodist_pool_GCS_v40.csv,mn_avg_eb,subgroup == wng
+float64,White / Native American Gap growth in grades,wi_grd,SEDA_geodist_pool_GCS_v40.csv,mn_grd_eb,subgroup == wng
+float64,White / Native American Gap trend in test scores,wi_coh,SEDA_geodist_pool_GCS_v40.csv,mn_coh_eb,subgroup == wng
 object,Identifier,id,SEDA_geodist_pool_GCS_v40.csv,leaidC,subgroup == mfg
 float64,Male / Female Sample Size,mf_sz,SEDA_geodist_pool_GCS_v40.csv,mn_asmts,subgroup == mfg
 float64,Male / Female Gap average test score,mf_avg,SEDA_geodist_pool_GCS_v40.csv,mn_avg_eb,subgroup == mfg

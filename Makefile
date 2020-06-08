@@ -7,22 +7,22 @@ districts_id = leaidC
 schools_id = ncessch
 
 # master data file names
-counties_main = SEDA_county_pool_GCS_v30.csv
+counties_main = SEDA_county_pool_GCS_v40.csv
 districts_main = SEDA_geodist_pool_GCS_v40.csv
-schools_main = SEDA_school_pool_GCS_v30_latlong_city.csv
+schools_main = SEDA_school_pool_GCS_v40_latlong_city.csv
 
 # Shapefile
 districts_shapefile = 2018_unified_elementary.zip
 
 # metrics available at the county level with paired demographics
 counties_metrics = avg grd coh ses seg min
-counties_dems = all w a b p f h i m mf np pn wa wb wh
+counties_dems = all w a b p f h i m mf np pn wa wb wh wi
 
 # metrics available at the school level with paired demographics
 schools_metrics = pct avg grd coh frl
 schools_dems = all w a h b i
 
-int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz mf_sz pn_sz
+int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz wi_sz mf_sz pn_sz
 float_cols = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m))) $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
 
 # variables to pull into individual files
@@ -385,13 +385,13 @@ deploy_export_data:
 
 #### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
 deploy_scatterplot:
-	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(BUILD_ID)/scatterplot \
+	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/scatterplot \
 		--recursive \
 		--acl=public-read \
 		--region=us-east-1 \
 		--cache-control max-age=2628000
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
-  	--paths "/$(BUILD_ID)/scatterplot/*"
+  	--paths "/$(DATA_VERSION)/scatterplot/*"
 
 #### deploy_search              : Algolia deploy (WARNING: 100,000+ records, costs $$)
 deploy_search:
@@ -415,21 +415,21 @@ deploy_source_zip:
 
 #### deploy_similar             : Deploy similar locations csv to S3 and invalidate CloudFront cache
 deploy_similar:
-	aws s3 cp ./build/similar s3://$(DATA_BUCKET)/build/$(BUILD_ID)/similar \
+	aws s3 cp ./build/similar s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/similar \
 		--recursive \
 		--acl=public-read \
 		--region=us-east-1 \
 		--cache-control max-age=2628000
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
-  	--paths "/$(BUILD_ID)/similar/*"
+  	--paths "/$(DATA_VERSION)/similar/*"
 
 #### deploy_flagged             : Deploy school flags to S3 and invalidate CloudFront cache
 deploy_flagged:
-	aws s3 cp ./build/flagged s3://$(DATA_BUCKET)/build/$(BUILD_ID)/flagged \
+	aws s3 cp ./build/flagged s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/flagged \
 		--recursive \
 		--acl=public-read \
 		--region=us-east-1 \
 		--cache-control max-age=2628000
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
-  	--paths "/$(BUILD_ID)/flagged/*"
+  	--paths "/$(DATA_VERSION)/flagged/*"
 
