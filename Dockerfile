@@ -54,4 +54,4 @@ RUN chmod +x run-task.sh
 # Add cargo to path
 ENV PATH="/root/.cargo/bin:$PATH"
 
-ENTRYPOINT ["/seda-etl/run-task.sh"]
+ENTRYPOINT ["/seda-etl/build.sh"]

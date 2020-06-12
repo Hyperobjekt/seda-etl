@@ -9,6 +9,7 @@ import numpy as np
 from data_types import get_dtypes_dict
 
 ID_LEN_DICT = {
+  'states': 2,
   'counties': 5,
   'districts': 7,
   'schools': 12

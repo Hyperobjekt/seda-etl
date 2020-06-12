@@ -19,6 +19,7 @@ OUTPUT_DIR = os.path.join(BASE_DIR, 'build', 'export')
 STATES_FILE = os.path.join(BASE_DIR, 'static', 'states.csv')
 
 GEO_TYPE_LEN = {
+  'states': 2,
   'counties': 5,
   'districts': 7,
   'schools': 12

@@ -56,6 +56,7 @@ if __name__ == '__main__':
         encoding='windows-1251',
         dtype=dtypes_dict,
         converters={
+          'fips': '{:0>2}'.format,
           'countyid': '{:0>5}'.format,
           'leaid': '{:0>7}'.format,
           'leaidC': '{:0>7}'.format,
@@ -132,6 +133,13 @@ if 'lat' in output_df.columns:
 output_df = output_df.fillna(-999)
 output_df = output_df.round(3)
 output_df = output_df.reset_index()
-output_df[['fid']] = output_df[['index']].apply(pd.to_numeric)
-output_df.set_index('index', inplace=True)
+
+# for states, use the id column for feature ids
+if 'id' in output_df.columns:
+  output_df[['fid']] = output_df[['id']].apply(pd.to_numeric)
+  output_df.set_index('id', inplace=True)
+# for others, use the index column
+if 'index' in output_df.columns:
+  output_df[['fid']] = output_df[['index']].apply(pd.to_numeric)
+  output_df.set_index('index', inplace=True)
 output_df.to_csv(sys.stdout, index_label='id')

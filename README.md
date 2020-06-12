@@ -78,3 +78,9 @@ deploy_source_zip          : Deploy local source zip data to S3 bucket
 deploy_similar             : Deploy similar locations csv to S3 and invalidate CloudFront cache
 deploy_flagged             : Deploy school flags to S3 and invalidate CloudFront cache
 ```
+
+
+## Deploying new data
+
+1. Download data files from the shared dropbox folder
+2. 

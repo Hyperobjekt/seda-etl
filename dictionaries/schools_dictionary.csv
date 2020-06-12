@@ -15,5 +15,8 @@ Identifier,id,SEDA_school_pool_GCS_v40_latlong_city.csv,ncessch,object,subgroup 
 School Size,all_sz,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_asmts,float64,subgroup == all
 State Abbr,state,SEDA_school_pool_GCS_v40_latlong_city.csv,stateabb,object,subgroup == all
 Average test score,all_avg,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_avg_eb,float64,subgroup == all
+Average test score (error),all_avg_e,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_avg_eb_moe,float64,subgroup == all
 Growth in grades across years,all_grd,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_grd_eb,float64,subgroup == all
+Growth in grades across years (error),all_grd_e,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_grd_eb_moe,float64,subgroup == all
 Trend in test scores across years,all_coh,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_coh_eb,float64,subgroup == all
+Trend in test scores across years (error),all_coh_e,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_coh_eb_moe,float64,subgroup == all

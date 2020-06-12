@@ -1,34 +1,52 @@
+# For comma-delimited list
+null :=
+space := $(null) $(null)
+comma := ,
+
 # available region types
-geo_types = counties districts schools
+geo_types = states counties districts schools
 
 # id field names for various regions
+states_id = fips
 counties_id = countyid
 districts_id = leaidC
 schools_id = ncessch
 
 # master data file names
+states_main = SEDA_state_pool_GCS_v40.csv
 counties_main = SEDA_county_pool_GCS_v40.csv
 districts_main = SEDA_geodist_pool_GCS_v40.csv
 schools_main = SEDA_school_pool_GCS_v40_latlong_city.csv
 
-# Shapefile
-districts_shapefile = 2018_unified_elementary.zip
+# margin of error var names (without demographic)
+suffix_moe = avg_e grd_e coh_e
 
-# metrics available at the county level with paired demographics
-counties_metrics = avg grd coh ses seg min
-counties_dems = all w a b p f h i m mf np pn wa wb wh wi
+# metrics available at the grouped level (states, counties, districts) with paired demographics
+group_metrics = avg grd coh ses seg min
+group_dems = all w a b p f h i m mf np pn wa wb wh wi
+group_data_vars = $(foreach m, $(group_metrics), $(foreach d, $(group_dems), $(d)_$(m)))
+group_data_moe = $(foreach m, $(suffix_moe), $(foreach d, $(group_dems), $(d)_$(m)))
+# comma separate data vars to strip from the tileset
+group_error_vars = $(subst $(space),$(comma),$(strip $(group_data_moe)))
 
 # metrics available at the school level with paired demographics
 schools_metrics = pct avg grd coh frl
 schools_dems = all w a h b i
+schools_data_vars = $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
+schools_moe = $(foreach m, $(suffix_moe), $(foreach d, $(schools_dems), $(d)_$(m)))
+# comma separate data vars to strip from the tileset
+schools_error_vars = $(subst $(space),$(comma),$(strip $(schools_moe)))
 
+# determines how data values get parsed (size is int, rest are float)
 int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz wi_sz mf_sz pn_sz
-float_cols = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m))) $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
+float_cols = $(group_data_vars) $(group_data_moe) $(schools_data_vars) $(schools_moe)
 
-# variables to pull into individual files
-counties_vars = $(foreach m, $(counties_metrics), $(foreach d, $(counties_dems), $(d)_$(m))) $(int_cols)
-districts_vars = $(counties_vars)
-schools_vars = $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m))) all_sz
+# variables to pull into master files for each level
+group_vars = $(group_data_vars) $(group_data_moe) $(int_cols)
+states_vars = $(group_vars)
+counties_vars = $(group_vars)
+districts_vars = $(group_vars)
+schools_vars = $(schools_data_vars) $(schools_moe) all_sz
 
 # variables containing place meta data
 meta_vars = id,name,lat,lon,all_sz
@@ -36,7 +54,8 @@ meta_vars = id,name,lat,lon,all_sz
 # meta data file targets
 meta_files = $(foreach t, $(geo_types), build/scatterplot/meta/$(t).csv)
 
-# individual files for all regions containing id,{VAR_NAME}
+# contains make targets for each individual variable file so data can be loaded in chunks
+# (eg. build/scatterplot/counties/all_coh.csv) 
 individual_var_files = $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)/$(v).csv)) build/scatterplot/districts/all_avg3.csv build/scatterplot/districts/all_avg4.csv build/scatterplot/districts/all_avg5.csv build/scatterplot/districts/all_avg6.csv build/scatterplot/districts/all_avg7.csv build/scatterplot/districts/all_avg8.csv
 
 # files to create reduced pairs for
@@ -46,10 +65,7 @@ reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
 BUILD_ID?=dev
 DATA_VERSION?=1.1.0
 
-# For comma-delimited list
-null :=
-space := $(null) $(null)
-comma := ,
+
 
 .PHONY: help tiles data search geojson scatterplot deploy_search deploy_tilesets deploy_scatterplot deploy_all deploy_flagged deploy_similar
 
@@ -60,6 +76,15 @@ help: Makefile
 
 #### all                        : Build everything
 all: geojson tiles data search scatterplot similar flagged
+
+#### s3                         : Build and deploy all S3 data
+s3: data scatterplot similar flagged deploy_scatterplot deploy_similar deploy_flagged
+
+#### mapbox                     : Build and deploy all mapbox assets
+mapbox: geojson tiles deploy_tilesets
+
+#### algolia                    : Build and deploy all algolia (search) data
+algolia: search deploy_search
 
 #### tiles                      : Create mbtiles for all regions
 tiles: $(foreach t, $(geo_types), build/tiles/$(t).mbtiles)
@@ -135,29 +160,15 @@ districts-name = "this.properties.name = this.properties.NAME"
 ### Creates counties geojson w/ GEOID and name (no data)
 build/geography/base/%.geojson:
 	mkdir -p $(dir $@)
-	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$*.geojson.gz | \
-	gunzip -c - > build/geography/base/tmp.geojson
-	node ./scripts/update_geojson.js $* build/geography/base/tmp.geojson $@
+	node ./scripts/update_geojson.js $* build/source_data/shapes/$*.geojson $@
 	echo "{ \"type\":\"FeatureCollection\", \"features\": " | cat - $@ > build/geography/base/tmp.geojson
 	echo "}" >> build/geography/base/tmp.geojson
 	mv build/geography/base/tmp.geojson $@
 
-### TO FETCH COUNTIES FROM CENSUS:
-# wget --no-use-server-timestamps -np -nd -r -P $(dir $@)tmp -A '$(counties-pattern)' $(census_ftp_base)
-# for f in $(dir $@)tmp/*.zip; do unzip -d $(dir $@)tmp $$f; done
-# mapshaper $(dir $@)tmp/*.shp combine-files \
-# 	-each $(counties-geoid) \
-# 	-each $(counties-name) \
-# 	-filter-fields id,name \
-# 	-o - combine-layers format=geojson > $@
-# rm -rf $(dir $@)tmp
-
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
 build/geography/base/districts.geojson:
-	mkdir -p $(dir $@)/tmp
-	aws s3 cp s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$(districts_shapefile) $(dir $@)
-	unzip -d $(dir $@)tmp $(dir $@)$(districts_shapefile)
-	mapshaper $(dir $@)tmp/*.shp combine-files \
+	mkdir -p $(dir $@)
+	mapshaper build/source_data/shapes/districts/*.shp combine-files \
 		-each $(districts-geoid) \
 		-each $(districts-name) \
 		-filter-fields id,name \
@@ -167,12 +178,12 @@ build/geography/base/districts.geojson:
 ### Create data file with only data for tilesets
 build/geography/data/districts.csv: build/districts.csv
 	mkdir -p $(dir $@)
-	csvcut --not-columns lat,lon,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state_name,state $< > $@
+	csvcut --not-columns lat,lon,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state_name,state,$(group_error_vars) $< > $@
 
 ### Create data file with only data for tilesets
 build/geography/data/%.csv: build/%.csv
 	mkdir -p $(dir $@)
-	csvcut --not-columns lat,lon,state_name,state,featname $< > $@
+	csvcut --not-columns lat,lon,state_name,state,featname,$(group_error_vars) $< > $@
 
 ### Creates counties / districts geojson, populated with data
 build/geography/%.geojson: build/geography/base/%.geojson build/geography/data/%.csv
@@ -251,8 +262,6 @@ build/ids/%.csv: build/source_data/$$($$*_main)
 ### Fetch source data used for the build from S3 bucket
 build/source_data/%.csv:
 	mkdir -p $(dir $@)
-	wget -qO- http://$(DATA_BUCKET).s3-website-us-east-1.amazonaws.com/source/$(DATA_VERSION)/$*.csv.gz | \
-	gunzip -c - > $@
 
 
 ###
@@ -267,6 +276,11 @@ build/source_data/%.csv:
 
 # point radius used for for reducing points
 point_radius = 0.01
+
+### Create the meta data file for states (no need to reduce)
+build/scatterplot/meta/states.csv: build/clean/states.csv
+	mkdir -p $(dir $@)
+	cp $< $@
 
 ### Create the meta data file for districts / counties
 build/scatterplot/meta/%.csv: build/clean/%.csv
@@ -290,6 +304,13 @@ build/scatterplot/districts/%.csv: build/clean/districts.csv
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
 build/scatterplot/counties/%.csv: build/clean/counties.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
+
+### Create the single variable file for counties (e.g. all_avg)
+### NOTE: returns true even on fail when the data var is unavailable
+###       so it doesn't break the build chain
+build/scatterplot/states/%.csv: build/clean/states.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 
@@ -335,6 +356,10 @@ build/search/schools.csv: build/clean/schools.csv
 ###
 
 similar: $(foreach t, $(geo_types), build/similar/$(t).csv)
+
+# no similar states, so don't do anything
+build/similar/states.csv:
+	mkdir -p $(dir $@)
 
 build/similar/%.csv: build/source_data/%_similar.csv
 	mkdir -p $(dir $@)
