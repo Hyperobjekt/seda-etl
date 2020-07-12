@@ -26,7 +26,7 @@ group_metrics = avg grd coh ses seg min
 group_dems = all w a b p f h i m mf np pn wa wb wh wi
 group_data_vars = $(foreach m, $(group_metrics), $(foreach d, $(group_dems), $(d)_$(m)))
 group_data_moe = $(foreach m, $(suffix_moe), $(foreach d, $(group_dems), $(d)_$(m)))
-# comma separate data vars to strip from the tileset
+# comma separate error vars for csvkit arguments
 group_error_vars = $(subst $(space),$(comma),$(strip $(group_data_moe)))
 
 # metrics available at the school level with paired demographics
@@ -65,9 +65,7 @@ reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
 BUILD_ID?=dev
 DATA_VERSION?=1.1.0
 
-
-
-.PHONY: help tiles data search geojson scatterplot deploy_search deploy_tilesets deploy_scatterplot deploy_all deploy_flagged deploy_similar
+.PHONY: help tiles data search geojson scatterplot deploy_s3 deploy_search deploy_tilesets deploy_scatterplot deploy_all deploy_flagged deploy_similar
 
 # Based on https://swcarpentry.github.io/make-novice/08-self-doc/
 #### help                       : Print help
@@ -75,13 +73,13 @@ help: Makefile
 	perl -ne '/^#### / && s/^#### //g && print' $<
 
 #### all                        : Build everything
-all: geojson tiles data search scatterplot similar flagged
+all: tiles data search scatterplot similar flagged
 
 #### s3                         : Build and deploy all S3 data
-s3: data scatterplot similar flagged deploy_scatterplot deploy_similar deploy_flagged
+s3: data scatterplot similar flagged moe deploy_s3
 
 #### mapbox                     : Build and deploy all mapbox assets
-mapbox: geojson tiles deploy_tilesets
+mapbox: tiles deploy_tilesets
 
 #### algolia                    : Build and deploy all algolia (search) data
 algolia: search deploy_search
@@ -93,7 +91,7 @@ tiles: $(foreach t, $(geo_types), build/tiles/$(t).mbtiles)
 geojson: $(foreach t, $(geo_types), build/geography/$(t).geojson)
 
 #### data                       : Creates master data files used to populate search, tilesets, etc.
-data: $(foreach t, $(geo_types), build/$(t).csv)
+data: $(foreach t, $(geo_types), build/data/$(t).csv)
 
 #### export_data                : create csv / geojson files split by state 
 export_data: data geojson
@@ -151,6 +149,8 @@ build/tiles/schools.mbtiles: build/geography/schools.geojson
 ###
 
 census_ftp_base = ftp://ftp2.census.gov/geo/tiger/GENZ2010/
+states-geoid = "this.properties.id = this.properties.GEOID"
+states-name = "this.properties.name = this.properties.NAME"
 counties-pattern = gz_*_*_050_*_500k.zip
 counties-geoid = "this.properties.id = this.properties.STATE + this.properties.COUNTY"
 counties-name = "this.properties.name = this.properties.NAME + ' ' + this.properties.LSAD"
@@ -164,6 +164,16 @@ build/geography/base/%.geojson:
 	echo "{ \"type\":\"FeatureCollection\", \"features\": " | cat - $@ > build/geography/base/tmp.geojson
 	echo "}" >> build/geography/base/tmp.geojson
 	mv build/geography/base/tmp.geojson $@
+
+### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
+build/geography/base/states.geojson:
+	mkdir -p $(dir $@)
+	mapshaper build/source_data/shapes/states/*.shp combine-files \
+		-each $(states-geoid) \
+		-each $(states-name) \
+		-filter-fields id,name \
+		-uniq id \
+		-o - combine-layers format=geojson > $@
 
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
 build/geography/base/districts.geojson:
@@ -223,10 +233,6 @@ build/schools.csv: build/from_dict/schools.csv
 	cat $< | \
 	python3 scripts/clean_data.py schools > $@
 
-build/clean/%.csv: build/%.csv
-	mkdir -p $(dir $@)
-	cat $< | python3 scripts/strip_values.py $* > $@
-
 ### Extracts data based on the dictionary file for counties / districts / schools
 .SECONDEXPANSION:
 build/from_dict/%.csv: build/source_data/$$*_cov.csv build/source_data/$$($$*_main) build/source_data/district_grade_estimates.csv
@@ -251,6 +257,27 @@ build/ids/%.csv: build/source_data/$$($$*_main)
 	csvsort -c $($*_id) --no-inference | \
 	uniq | \
 	sed '1s/.*/id/' > $@
+
+### Build full data CSV for each region and split by state
+build/data/%.csv: build/%.csv
+	mkdir -p $(dir $@)
+	cat $< | python3 scripts/strip_values.py $* | \
+	csvcut --not-columns fid,state_name,state,featname > $@
+	xsv partition -p 2 id $(dir $@)$* $@
+
+### Build full data CSV for each region and split by state
+build/data/districts.csv: build/districts.csv
+	mkdir -p $(dir $@)
+	cat $< | python3 scripts/strip_values.py districts | \
+	csvcut --not-columns fid,state_name,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state,featname > $@
+	xsv partition -p 2 id $(dir $@)districts $@
+
+### Build full data CSV for schools and split by state
+build/data/schools.csv: build/schools.csv
+	mkdir -p $(dir $@)
+	cat $< | python3 scripts/strip_values.py schools | \
+	csvcut --not-columns w_pct,i_pct,a_pct,h_pct,b_pct,state_name,state > $@
+	xsv partition -p 2 id $(dir $@)schools $@
 
 
 ###
@@ -278,17 +305,17 @@ build/source_data/%.csv:
 point_radius = 0.01
 
 ### Create the meta data file for states (no need to reduce)
-build/scatterplot/meta/states.csv: build/clean/states.csv
+build/scatterplot/meta/states.csv: build/data/states.csv
 	mkdir -p $(dir $@)
 	cp $< $@
 
 ### Create the meta data file for districts / counties
-build/scatterplot/meta/%.csv: build/clean/%.csv
+build/scatterplot/meta/%.csv: build/data/%.csv
 	mkdir -p $(dir $@)
 	cat $< | csvcut -c $(meta_vars) > $@
 
 ### Create the master meta data file for schools, and also split by state
-build/scatterplot/meta/schools.csv: build/clean/schools.csv
+build/scatterplot/meta/schools.csv: build/data/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(meta_vars) $< > $@
 	xsv partition -p 2 id $(dir $@)schools $@
@@ -296,28 +323,28 @@ build/scatterplot/meta/schools.csv: build/clean/schools.csv
 ### Create the single variable file for districts (e.g. all_avg)
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/districts/%.csv: build/clean/districts.csv
+build/scatterplot/districts/%.csv: build/data/districts.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 
 ### Create the single variable file for counties (e.g. all_avg)
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/counties/%.csv: build/clean/counties.csv
+build/scatterplot/counties/%.csv: build/data/counties.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 
 ### Create the single variable file for counties (e.g. all_avg)
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/states/%.csv: build/clean/states.csv
+build/scatterplot/states/%.csv: build/data/states.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 
 ### Create the single variable file for schools and also split by state
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/schools/%.csv: build/clean/schools.csv
+build/scatterplot/schools/%.csv: build/data/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
 	xsv partition --filename {}/$*.csv --prefix-length 2 id $(dir $@) $@ || true
@@ -341,12 +368,12 @@ build/scatterplot/schools/reduced/schools.csv: build/schools.csv
 search_cols = id,name,state_name,lat,lon,all_sz,all_avg,all_grd,all_coh
 
 ### Create search data for districts / counties
-build/search/%.csv: build/clean/%.csv
+build/search/%.csv: build/data/%.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols),all_ses $< > $@
 
 ### Create search data for schools (includes city name)
-build/search/schools.csv: build/clean/schools.csv
+build/search/schools.csv: build/data/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols),city,all_frl $< > $@
 
@@ -387,6 +414,21 @@ build/flagged/%.json: build/source_data/flag_%.csv
 	mkdir -p $(dir $@)
 	csvgrep $< -c 2 -m 1 | python3 ./scripts/ncessch_to_json_array.py > $@
 
+###
+### MARGIN OF ERROR
+###
+
+moe: ${foreach g, $(geo_types), build/moe/$(g)/all.csv}
+
+build/moe/%/all.csv: build/data/%.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,$(group_error_vars) $< > $@
+	xsv partition --filename {}.csv --prefix-length 2 id $(dir $@) $@ || true
+
+build/moe/schools/all.csv: build/data/schools.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,all_avg_e,all_grd_e,all_coh_e $< > $@
+	xsv partition --filename {}.csv --prefix-length 2 id $(dir $@) $@ || true
 
 ###
 ### DEPLOYMENT
@@ -408,15 +450,6 @@ deploy_export_data:
 		--region=us-east-1 \
 		--cache-control max-age=2628000
 
-#### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
-deploy_scatterplot:
-	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/scatterplot \
-		--recursive \
-		--acl=public-read \
-		--region=us-east-1 \
-		--cache-control max-age=2628000
-	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
-  	--paths "/$(DATA_VERSION)/scatterplot/*"
 
 #### deploy_search              : Algolia deploy (WARNING: 100,000+ records, costs $$)
 deploy_search:
@@ -438,6 +471,32 @@ deploy_source_geojson:
 deploy_source_zip:
 	for f in build/source_data/*.zip; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
+  
+deploy_s3:
+	mkdir -p ./build/s3
+	mkdir -p ./build/scatterplot && cp -rf ./build/scatterplot ./build/s3
+	mkdir -p ./build/similar && cp -rf ./build/similar ./build/s3
+	mkdir -p ./build/flagged && cp -rf ./build/flagged ./build/s3
+	mkdir -p ./build/data && cp -rf ./build/data ./build/s3
+	mkdir -p ./build/moe && cp -rf ./build/moe ./build/s3
+	aws s3 cp ./build/s3 s3://$(DATA_BUCKET)/build/$(DATA_VERSION) \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(DATA_VERSION)/*"
+
+#### deploy_scatterplot         : Deploy scatterplot var files to S3 bucket 
+deploy_scatterplot:
+	aws s3 cp ./build/scatterplot s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/scatterplot \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(DATA_VERSION)/scatterplot/*"
+
 #### deploy_similar             : Deploy similar locations csv to S3 and invalidate CloudFront cache
 deploy_similar:
 	aws s3 cp ./build/similar s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/similar \
@@ -458,3 +517,22 @@ deploy_flagged:
 	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
   	--paths "/$(DATA_VERSION)/flagged/*"
 
+#### deploy_data                : Deploy static data csvs
+deploy_data:
+	aws s3 cp ./build/data s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/data \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(DATA_VERSION)/data/*"
+
+#### deploy_moe                 : Deploy margin of error to S3 and invalidate CloudFront cache
+deploy_moe:
+	aws s3 cp ./build/moe s3://$(DATA_BUCKET)/build/$(DATA_VERSION)/moe \
+		--recursive \
+		--acl=public-read \
+		--region=us-east-1 \
+		--cache-control max-age=2628000
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) \
+  	--paths "/$(DATA_VERSION)/moe/*"

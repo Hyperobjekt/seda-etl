@@ -27,10 +27,10 @@ mv build/source_data/similar-places/DistrictMatch.csv build/source_data/district
 mv build/source_data/similar-places/CountyMatch.csv build/source_data/counties_similar.csv
 
 # rename associated variable files
+mv build/source_data/state\ level\ variables.csv build/source_data/states_cov.csv
 mv build/source_data/county\ level\ variables.csv build/source_data/counties_cov.csv
 mv build/source_data/district\ level\ variables.csv build/source_data/districts_cov.csv
 mv build/source_data/school\ level\ variables.csv build/source_data/schools_cov.csv
-# mv build/source_data/state\ level\ variables.csv build/source_data/states_cov.csv
 
 # rename flags data
 mv build/source_data/flags/spedidea\ flag.csv build/source_data/flag_sped.csv

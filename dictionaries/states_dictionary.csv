@@ -1,6 +1,18 @@
 type,name,output_column,source_file,column,row_condition
 object,Identifier,id,SEDA_state_pool_GCS_v40.csv,fips,
 object,Identifier,name,SEDA_state_pool_GCS_v40.csv,stateabb,
+object,Identifier,id,states_cov.csv,fips,
+float64,Socioeconomic Status,all_ses,states_cov.csv,sesavgall,
+float64,Socioeconomic Status - white,w_ses,states_cov.csv,sesavgwht,
+float64,Socioeconomic Status - black,b_ses,states_cov.csv,sesavgblk,
+float64,Socioeconomic Status - hispanic,h_ses,states_cov.csv,sesavghsp,
+float64,Socioeconomic difference - white/black,wb_ses,states_cov.csv,sesavgwhtblk,
+float64,Socioeconomic difference - white/hispanic,wh_ses,states_cov.csv,sesavgwhthsp,
+float64,Information index between schools: White/Black,wb_seg,states_cov.csv,ecdsegwhtblk,
+float64,Information index between schools: White/Hispanic,wh_seg,states_cov.csv,ecdsegwhthsp,
+float64,Information index between schools: FRPL/No FRPL,np_seg,states_cov.csv,ecdsegpoornonpoor,
+float64,differential exposure to minority students between white/black,wb_min,states_cov.csv,minsegwhtblk,
+float64,differential exposure to minority students between white/hispanic,wh_min,states_cov.csv,minsegwhthsp,
 object,Identifier,id,SEDA_state_pool_GCS_v40.csv,fips,subgroup == all
 object,State,state,SEDA_state_pool_GCS_v40.csv,stateabb,subgroup == all
 float64,Sample Size,all_sz,SEDA_state_pool_GCS_v40.csv,mn_asmts,subgroup == all
