@@ -38,7 +38,7 @@ schools_moe = $(foreach m, $(suffix_moe), $(foreach d, $(schools_dems), $(d)_$(m
 schools_error_vars = $(subst $(space),$(comma),$(strip $(schools_moe)))
 
 # determines how data values get parsed (size is int, rest are float)
-int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz wi_sz mf_sz pn_sz
+int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz wi_sz mf_sz pn_sz u r s t e m c ch mg
 float_cols = $(group_data_vars) $(group_data_moe) $(schools_data_vars) $(schools_moe)
 
 # variables to pull into master files for each level
@@ -73,10 +73,14 @@ help: Makefile
 	perl -ne '/^#### / && s/^#### //g && print' $<
 
 #### all                        : Build everything
-all: tiles data search scatterplot similar flagged
+all: tiles data search scatterplot similar flagged moe
+
+# Note: removed `scatterplot` task from CSV build, front end now uses full data files (10/08/20)
+#### csv files									: Build static CSV files
+csv: data explorer similar flagged moe
 
 #### s3                         : Build and deploy all S3 data
-s3: data scatterplot similar flagged moe deploy_s3
+s3: csv deploy_s3
 
 #### mapbox                     : Build and deploy all mapbox assets
 mapbox: tiles deploy_tilesets
@@ -92,6 +96,9 @@ geojson: $(foreach t, $(geo_types), build/geography/$(t).geojson)
 
 #### data                       : Creates master data files used to populate search, tilesets, etc.
 data: $(foreach t, $(geo_types), build/data/$(t).csv)
+
+#### explorer                   : Creates static files used in the explorer
+explorer: $(foreach t, $(geo_types), build/explorer/$(t).csv)
 
 #### export_data                : create csv / geojson files split by state 
 export_data: data geojson
@@ -262,23 +269,36 @@ build/ids/%.csv: build/source_data/$$($$*_main)
 build/data/%.csv: build/%.csv
 	mkdir -p $(dir $@)
 	cat $< | python3 scripts/strip_values.py $* | \
-	csvcut --not-columns fid,state_name,state,featname > $@
+	csvcut --not-columns fid,state,state_name,featname > $@
 	xsv partition -p 2 id $(dir $@)$* $@
 
 ### Build full data CSV for each region and split by state
 build/data/districts.csv: build/districts.csv
 	mkdir -p $(dir $@)
 	cat $< | python3 scripts/strip_values.py districts | \
-	csvcut --not-columns fid,state_name,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state,featname > $@
+	csvcut --not-columns fid,all_avg3,all_avg4,all_avg5,all_avg6,all_avg7,all_avg8,state,state_name,featname > $@
 	xsv partition -p 2 id $(dir $@)districts $@
 
 ### Build full data CSV for schools and split by state
 build/data/schools.csv: build/schools.csv
 	mkdir -p $(dir $@)
 	cat $< | python3 scripts/strip_values.py schools | \
-	csvcut --not-columns w_pct,i_pct,a_pct,h_pct,b_pct,state_name,state > $@
+	csvcut --not-columns w_pct,i_pct,a_pct,h_pct,b_pct,state,state_name > $@
 	xsv partition -p 2 id $(dir $@)schools $@
 
+###
+### EXPLORER DATA
+###
+
+build/explorer/%.csv: build/data/%.csv
+	mkdir -p $(dir $@)
+	csvcut --not-columns $(group_error_vars) $^ | \
+	sed 's/.0,/,/g' > $@
+
+build/explorer/schools.csv: build/data/schools.csv
+	mkdir -p $(dir $@)
+	csvcut --not-columns all_avg_e,all_grd_e,all_coh_e  $^ | \
+	sed 's/.0,/,/g' > $@
 
 ###
 ### SOURCE DATA
@@ -368,12 +388,16 @@ build/scatterplot/schools/reduced/schools.csv: build/schools.csv
 search_cols = id,name,state_name,lat,lon,all_sz,all_avg,all_grd,all_coh
 
 ### Create search data for districts / counties
-build/search/%.csv: build/data/%.csv
+build/search/%.csv: build/%.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols),all_ses $< > $@
 
+build/search/states.csv: build/states.csv
+	mkdir -p $(dir $@)
+	csvcut -c id,name,lat,lon,all_sz,all_avg,all_grd,all_coh,all_ses $< > $@
+
 ### Create search data for schools (includes city name)
-build/search/schools.csv: build/data/schools.csv
+build/search/schools.csv: build/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c $(search_cols),city,all_frl $< > $@
 
@@ -478,6 +502,7 @@ deploy_s3:
 	mkdir -p ./build/similar && cp -rf ./build/similar ./build/s3
 	mkdir -p ./build/flagged && cp -rf ./build/flagged ./build/s3
 	mkdir -p ./build/data && cp -rf ./build/data ./build/s3
+	mkdir -p ./build/explorer && cp -rf ./build/explorer ./build/s3
 	mkdir -p ./build/moe && cp -rf ./build/moe ./build/s3
 	aws s3 cp ./build/s3 s3://$(DATA_BUCKET)/build/$(DATA_VERSION) \
 		--recursive \

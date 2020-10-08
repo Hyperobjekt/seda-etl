@@ -11,6 +11,10 @@ float64,Information index between schools: White/Hispanic,wh_seg,districts_cov.c
 float64,Information index between schools: FRPL/No FRPL,np_seg,districts_cov.csv,ecdsegpoornonpoor,
 float64,differential exposure to minority students between white/black,wb_min,districts_cov.csv,minsegwhtblk,
 float64,differential exposure to minority students between white/hispanic,wh_min,districts_cov.csv,minsegwhthsp,
+float64,Urban district flag,u,districts_cov.csv,urban,
+float64,Suburban district flag,s,districts_cov.csv,suburb,
+float64,Town district flag,t,districts_cov.csv,town,
+float64,Rural district flag,r,districts_cov.csv,rural,
 object,Identifier,id,SEDA_geodist_pool_GCS_v40.csv,leaidC,
 object,Name,name,SEDA_geodist_pool_GCS_v40.csv,leaname,
 object,Identifier,id,SEDA_geodist_pool_GCS_v40.csv,leaidC,subgroup == all
