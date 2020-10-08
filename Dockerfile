@@ -40,18 +40,18 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN /bin/bash -c "source $HOME/.cargo/env \
   && cargo install xsv"
 
-# Clone ETL repo
-WORKDIR /
-RUN git clone https://github.com/Hyperobjekt/seda-etl.git
-WORKDIR /seda-etl/
+COPY . /app
+WORKDIR /app/
 
 # Install Python packages
 RUN pip3 install pipenv && pipenv install --system
+RUN npm install
 
 # make entrypoint executable
 RUN chmod +x run-task.sh
+RUN chmod +x build.sh
 
 # Add cargo to path
 ENV PATH="/root/.cargo/bin:$PATH"
 
-ENTRYPOINT ["/seda-etl/run-task.sh"]
+ENTRYPOINT ["./build.sh"]

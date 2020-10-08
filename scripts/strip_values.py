@@ -22,4 +22,4 @@ if __name__ == '__main__':
 
   # strip the value to create output
   output_df = strip_value(data_df, -999)
-  output_df.to_csv(sys.stdout)
+  output_df.to_csv(sys.stdout, index=False)

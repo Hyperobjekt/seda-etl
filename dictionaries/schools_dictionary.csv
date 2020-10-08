@@ -6,14 +6,26 @@ Percent indian students,i_pct,schools_cov.csv,perind,float64,
 Percent asian students,a_pct,schools_cov.csv,perasn,float64,
 Percent hispanic students,h_pct,schools_cov.csv,perhsp,float64,
 Percent black students,b_pct,schools_cov.csv,perblk,float64,
-Identifier,id,SEDA_school_pool_GCS_v30_latlong_city.csv,ncessch,object,
-Name,name,SEDA_school_pool_GCS_v30_latlong_city.csv,schoolname,object,
-City,city,SEDA_school_pool_GCS_v30_latlong_city.csv,schcity,object,
-Latitude,lat,SEDA_school_pool_GCS_v30_latlong_city.csv,latcode,float64,
-Longitude,lon,SEDA_school_pool_GCS_v30_latlong_city.csv,loncode,float64,
-Identifier,id,SEDA_school_pool_GCS_v30_latlong_city.csv,ncessch,object,subgroup == all
-School Size,all_sz,SEDA_school_pool_GCS_v30_latlong_city.csv,mn_asmts,float64,subgroup == all
-State Abbr,state,SEDA_school_pool_GCS_v30_latlong_city.csv,stateabb,object,subgroup == all
-Average test score,all_avg,SEDA_school_pool_GCS_v30_latlong_city.csv,mn_avg_eb,float64,subgroup == all
-Growth in grades across years,all_grd,SEDA_school_pool_GCS_v30_latlong_city.csv,mn_grd_eb,float64,subgroup == all
-Trend in test scores across years,all_coh,SEDA_school_pool_GCS_v30_latlong_city.csv,mn_coh_eb,float64,subgroup == all
+Urban,u,schools_cov.csv,city,float64,
+Suburb,s,schools_cov.csv,suburb,float64,
+Town,t,schools_cov.csv,town,float64,
+Rural,r,schools_cov.csv,rural,float64,
+Elementary School,e,schools_cov.csv,elem,float64,
+Middle School,m,schools_cov.csv,midd,float64,
+Combined School,c,schools_cov.csv,comb,float64,
+Charter School,ch,schools_cov.csv,charter,float64,
+Magnet School,mg,schools_cov.csv,magnet,float64,
+Identifier,id,SEDA_school_pool_GCS_v40_latlong_city.csv,ncessch,object,
+Name,name,SEDA_school_pool_GCS_v40_latlong_city.csv,schoolname,object,
+City,city,SEDA_school_pool_GCS_v40_latlong_city.csv,schcity,object,
+Latitude,lat,SEDA_school_pool_GCS_v40_latlong_city.csv,latcode,float64,
+Longitude,lon,SEDA_school_pool_GCS_v40_latlong_city.csv,loncode,float64,
+Identifier,id,SEDA_school_pool_GCS_v40_latlong_city.csv,ncessch,object,subgroup == all
+School Size,all_sz,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_asmts,float64,subgroup == all
+State Abbr,state,SEDA_school_pool_GCS_v40_latlong_city.csv,stateabb,object,subgroup == all
+Average test score,all_avg,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_avg_eb,float64,subgroup == all
+Average test score (error),all_avg_e,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_avg_eb_moe,float64,subgroup == all
+Growth in grades across years,all_grd,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_grd_eb,float64,subgroup == all
+Growth in grades across years (error),all_grd_e,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_grd_eb_moe,float64,subgroup == all
+Trend in test scores across years,all_coh,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_coh_eb,float64,subgroup == all
+Trend in test scores across years (error),all_coh_e,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_coh_eb_moe,float64,subgroup == all
