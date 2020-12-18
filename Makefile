@@ -8,9 +8,9 @@ geo_types = states counties districts schools
 
 # id field names for various regions
 states_id = fips
-counties_id = countyid
-districts_id = leaidC
-schools_id = ncessch
+counties_id = sedacounty
+districts_id = sedalea
+schools_id = sedasch
 
 # master data file names
 states_main = SEDA_state_pool_GCS_v40.csv
@@ -257,11 +257,10 @@ build/centers/%.csv: build/geography/base/%.geojson
 	python3 scripts/clean_data.py $* > $@
 
 ### Builds a csv file containing only IDs for the given region, used for joins
-.SECONDEXPANSION:
-build/ids/%.csv: build/source_data/$$($$*_main)
+build/ids/%.csv: build/from_dict/%.csv
 	mkdir -p $(dir $@)
-	csvcut -e windows-1251 -c $($*_id) build/source_data/$($*_main) | \
-	csvsort -c $($*_id) --no-inference | \
+	csvcut -c 1 $< | \
+	csvsort -c 1 --no-inference | \
 	uniq | \
 	sed '1s/.*/id/' > $@
 

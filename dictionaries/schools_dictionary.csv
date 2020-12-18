@@ -1,5 +1,5 @@
 name,output_column,source_file,column,type,row_condition
-Identifier,id,schools_cov.csv,ncessch,object,
+Identifier,id,schools_cov.csv,sedasch,object,
 Percent free or reduce lunch,all_frl,schools_cov.csv,perfrl,float64,
 Percent white students,w_pct,schools_cov.csv,perwht,float64,
 Percent indian students,i_pct,schools_cov.csv,perind,float64,
@@ -15,12 +15,12 @@ Middle School,m,schools_cov.csv,midd,float64,
 Combined School,c,schools_cov.csv,comb,float64,
 Charter School,ch,schools_cov.csv,charter,float64,
 Magnet School,mg,schools_cov.csv,magnet,float64,
-Identifier,id,SEDA_school_pool_GCS_v40_latlong_city.csv,ncessch,object,
+Identifier,id,SEDA_school_pool_GCS_v40_latlong_city.csv,sedasch,object,
 Name,name,SEDA_school_pool_GCS_v40_latlong_city.csv,schoolname,object,
 City,city,SEDA_school_pool_GCS_v40_latlong_city.csv,schcity,object,
 Latitude,lat,SEDA_school_pool_GCS_v40_latlong_city.csv,latcode,float64,
 Longitude,lon,SEDA_school_pool_GCS_v40_latlong_city.csv,loncode,float64,
-Identifier,id,SEDA_school_pool_GCS_v40_latlong_city.csv,ncessch,object,subgroup == all
+Identifier,id,SEDA_school_pool_GCS_v40_latlong_city.csv,sedasch,object,subgroup == all
 School Size,all_sz,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_asmts,float64,subgroup == all
 State Abbr,state,SEDA_school_pool_GCS_v40_latlong_city.csv,stateabb,object,subgroup == all
 Average test score,all_avg,SEDA_school_pool_GCS_v40_latlong_city.csv,mn_avg_eb,float64,subgroup == all
