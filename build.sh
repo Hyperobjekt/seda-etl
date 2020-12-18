@@ -31,6 +31,7 @@ do
         ;;
         --search)
         SHOULD_BUILD_SEARCH=1
+        SHOULD_DEPLOY_SEARCH=1
         shift # Remove --search from processing
         ;;
         --data)
@@ -116,8 +117,8 @@ if [[ $SHOULD_DEPLOY -eq 1 ]]; then
         make deploy_tilesets
     fi
 
-    # Deploy search to algolia
-    if [[ $SHOULD_BUILD_SEARCH -eq 1 ]]; then
+    # Deploy search to algolia if search and deploy flags are specified
+    if [[ $SHOULD_DEPLOY_SEARCH -eq 1 ]]; then
         if [[ -z "${ALGOLIA_ID}" ]]; then
             printf '%s\n' "Missing ALGOLIA_ID environment variable, required to deploy search." >&2
             exit 1
@@ -126,14 +127,7 @@ if [[ $SHOULD_DEPLOY -eq 1 ]]; then
             printf '%s\n' "Missing ALGOLIA_KEY environment variable, required to deploy search." >&2
             exit 1
         fi
-        while true; do
-            read -p "*WARNING*: deploying the search indicies to algolia will incur costs, do you want to continue?" yn
-            case $yn in
-                [Yy]* ) echo "deploying search"; break;;
-                [Nn]* ) break;;
-                * ) echo "Please answer yes or no.";;
-            esac
-        done
+        make deploy_search
     fi
 
 fi
