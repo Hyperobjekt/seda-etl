@@ -38,7 +38,7 @@ schools_moe = $(foreach m, $(suffix_moe), $(foreach d, $(schools_dems), $(d)_$(m
 schools_error_vars = $(subst $(space),$(comma),$(strip $(schools_moe)))
 
 # determines how data values get parsed (size is int, rest are float)
-int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz wi_sz mf_sz pn_sz u r s t e m c ch mg
+int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz wi_sz mf_sz pn_sz u r s t e m c ch mg bie
 float_cols = $(group_data_vars) $(group_data_moe) $(schools_data_vars) $(schools_moe)
 
 # variables to pull into master files for each level

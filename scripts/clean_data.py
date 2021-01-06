@@ -86,9 +86,9 @@ def clean_data(df, region, precision=3):
     # rural, urban, suburban, town flags
     if 'r' in df.columns:
         df = df.astype({"r": int, "u": int, "s": int, "t": int})
-    # charter, magnet flags
+    # charter, magnet, bie flags
     if 'ch' in df.columns:
-        df = df.astype({"ch": int, "mg": int})
+        df = df.astype({"ch": int, "mg": int, "bie": int})
     return df
 
 

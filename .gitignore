@@ -2,6 +2,7 @@ build
 seda_data
 .env.local
 .env.production
+.env.prod
 .env.staging
 *.zip
 .vscode
