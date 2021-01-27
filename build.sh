@@ -7,6 +7,9 @@
 # into the build/source_data directory.
 ########
 
+# exit when any command fails
+set -e
+
 SOURCE_FILE=""
 SHOULD_DEPLOY=0
 SHOULD_DEPLOY_SEARCH=0

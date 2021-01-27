@@ -26,16 +26,19 @@ group_metrics = avg grd coh ses seg min
 group_dems = all w a b p f h i m mf np pn wa wb wh wi
 group_data_vars = $(foreach m, $(group_metrics), $(foreach d, $(group_dems), $(d)_$(m)))
 group_data_moe = $(foreach m, $(suffix_moe), $(foreach d, $(group_dems), $(d)_$(m)))
-# comma separate error vars for csvkit arguments
+# comma separate vars for csvkit arguments
+group_data_vars_comma = $(subst $(space),$(comma),$(strip $(group_data_vars)))
 group_error_vars = $(subst $(space),$(comma),$(strip $(group_data_moe)))
 
 # metrics available at the school level with paired demographics
-schools_metrics = pct avg grd coh frl
-schools_dems = all w a h b i
+schools_metrics = avg grd coh frl
+schools_dems = all
 schools_data_vars = $(foreach m, $(schools_metrics), $(foreach d, $(schools_dems), $(d)_$(m)))
 schools_moe = $(foreach m, $(suffix_moe), $(foreach d, $(schools_dems), $(d)_$(m)))
 # comma separate data vars to strip from the tileset
 schools_error_vars = $(subst $(space),$(comma),$(strip $(schools_moe)))
+schools_data_vars_comma = $(subst $(space),$(comma),$(strip $(schools_data_vars)))
+
 
 # determines how data values get parsed (size is int, rest are float)
 int_cols = a_sz w_sz all_sz b_sz h_sz i_sz m_sz f_sz p_sz np_sz wa_sz wb_sz wh_sz wi_sz mf_sz pn_sz u r s t e m c ch mg bie
@@ -56,7 +59,9 @@ meta_files = $(foreach t, $(geo_types), build/scatterplot/meta/$(t).csv)
 
 # contains make targets for each individual variable file so data can be loaded in chunks
 # (eg. build/scatterplot/counties/all_coh.csv) 
-individual_var_files = $(foreach g,$(geo_types),$(foreach v,$($(g)_vars),build/scatterplot/$(g)/$(v).csv)) build/scatterplot/districts/all_avg3.csv build/scatterplot/districts/all_avg4.csv build/scatterplot/districts/all_avg5.csv build/scatterplot/districts/all_avg6.csv build/scatterplot/districts/all_avg7.csv build/scatterplot/districts/all_avg8.csv
+region_files = $(foreach g,$(geo_types),build/scatterplot/$(g).csv)
+
+discovery_files = build/scatterplot/districts/all_avg3.csv build/scatterplot/districts/all_avg4.csv build/scatterplot/districts/all_avg5.csv build/scatterplot/districts/all_avg6.csv build/scatterplot/districts/all_avg7.csv build/scatterplot/districts/all_avg8.csv
 
 # files to create reduced pairs for
 reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
@@ -105,7 +110,7 @@ export_data: data geojson
 	python3 scripts/create_export_data.py
 
 #### scatterplot                : Create all individual var files used for scatterplots
-scatterplot: $(meta_files) $(individual_var_files) $(reduced_pair_files)
+scatterplot: $(meta_files) $(region_files) $(reduced_pair_files)
 	find build/scatterplot/ -type f -size 0 -delete
 
 #### search                     : Create data files containing data for search
@@ -217,6 +222,16 @@ build/geography/schools.geojson: build/schools.csv
 	csv2geojson --lat lat --lon lon | \
 	mapshaper - -o $@ combine-layers format=geojson 
 
+### find schools in the same location, offset slightly
+build/overlapping_schools.csv: build/schools.csv
+	csvcut -c id,lat,lon $< | \
+	sort -n | sed -E s/,/\ /g | \
+	uniq -f 1 -c | \
+	sed -E s/^[\ ]*//g | \
+	csvgrep -d \  -r [2-9]{1} -c 1 | \
+	sed '1s/.*/count,id,lat,lon/' | \
+	csvsort -c 1 -r -I
+
 
 
 ###
@@ -232,13 +247,15 @@ geojson_label_cmd = node --max_old_space_size=4096 $$(which geojson-polygon-labe
 build/%.csv: build/ids/%.csv build/centers/%.csv build/from_dict/%.csv
 	mkdir -p $(dir $@)
 	csvjoin -c id --left --no-inference $^ | \
-	python3 scripts/clean_data.py $* > $@
+	python3 scripts/clean_data.py $* | \
+	sed -E 's/(-?[0-9]+)\.0,/\1,/g' > $@
 
 ### Build master data file for schools from dictionary
 build/schools.csv: build/from_dict/schools.csv
 	mkdir -p $(dir $@)
-	cat $< | \
-	python3 scripts/clean_data.py schools > $@
+	node scripts/separate_schools.js $< | \
+	python3 scripts/clean_data.py schools | \
+	sed -E 's/(-?[0-9]+)\.0,/\1,/g' > $@
 
 ### Extracts data based on the dictionary file for counties / districts / schools
 .SECONDEXPANSION:
@@ -282,7 +299,7 @@ build/data/districts.csv: build/districts.csv
 build/data/schools.csv: build/schools.csv
 	mkdir -p $(dir $@)
 	cat $< | python3 scripts/strip_values.py schools | \
-	csvcut --not-columns w_pct,i_pct,a_pct,h_pct,b_pct,state,state_name > $@
+	csvcut --not-columns w_pct,i_pct,a_pct,h_pct,b_pct,state,state_name,fid,city > $@
 	xsv partition -p 2 id $(dir $@)schools $@
 
 ###
@@ -321,7 +338,7 @@ build/source_data/%.csv:
 ###
 
 # point radius used for for reducing points
-point_radius = 0.01
+point_radius = 0.015
 
 ### Create the meta data file for states (no need to reduce)
 build/scatterplot/meta/states.csv: build/data/states.csv
@@ -342,31 +359,19 @@ build/scatterplot/meta/schools.csv: build/data/schools.csv
 ### Create the single variable file for districts (e.g. all_avg)
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/districts/%.csv: build/data/districts.csv
+build/scatterplot/%.csv: build/data/%.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
-
-### Create the single variable file for counties (e.g. all_avg)
-### NOTE: returns true even on fail when the data var is unavailable
-###       so it doesn't break the build chain
-build/scatterplot/counties/%.csv: build/data/counties.csv
-	mkdir -p $(dir $@)
-	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
-
-### Create the single variable file for counties (e.g. all_avg)
-### NOTE: returns true even on fail when the data var is unavailable
-###       so it doesn't break the build chain
-build/scatterplot/states/%.csv: build/data/states.csv
-	mkdir -p $(dir $@)
-	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
+	csvcut --not-columns $(group_error_vars) $< | \
+	sed -E 's/(-?[0-9]+)\.0,/\1,/g' > $@
 
 ### Create the single variable file for schools and also split by state
 ### NOTE: returns true even on fail when the data var is unavailable
 ###       so it doesn't break the build chain
-build/scatterplot/schools/%.csv: build/data/schools.csv
+build/scatterplot/schools.csv: build/data/schools.csv
 	mkdir -p $(dir $@)
-	csvcut -c id,$* $< | csvgrep -c 2 -i -r ^$$ > $@ || true
-	xsv partition --filename {}/$*.csv --prefix-length 2 id $(dir $@) $@ || true
+	csvcut --not-columns city,lat,lon,fid,$(schools_error_vars) $< | \
+	sed -E 's/(-?[0-9]+)\.0,/\1,/g' > $@
+	xsv partition --filename schools/{}.csv --prefix-length 2 id $(dir $@) $@ || true
 
 ### Create reduced school data sets for each variable pair based on a point radius
 build/scatterplot/schools/reduced/schools.csv: build/schools.csv
@@ -441,17 +446,15 @@ build/flagged/%.json: build/source_data/flag_%.csv
 ### MARGIN OF ERROR
 ###
 
-moe: ${foreach g, $(geo_types), build/moe/$(g)/all.csv}
+moe: ${foreach g, $(geo_types), build/moe/$(g).csv}
 
-build/moe/%/all.csv: build/data/%.csv
+build/moe/%.csv: build/data/%.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,$(group_error_vars) $< > $@
-	xsv partition --filename {}.csv --prefix-length 2 id $(dir $@) $@ || true
 
-build/moe/schools/all.csv: build/data/schools.csv
+build/moe/schools.csv: build/data/schools.csv
 	mkdir -p $(dir $@)
 	csvcut -c id,all_avg_e,all_grd_e,all_coh_e $< > $@
-	xsv partition --filename {}.csv --prefix-length 2 id $(dir $@) $@ || true
 
 ###
 ### DEPLOYMENT
@@ -479,6 +482,7 @@ deploy_search:
 	python3 scripts/deploy_search.py ./build/search/counties.csv counties
 	python3 scripts/deploy_search.py ./build/search/districts.csv districts
 	python3 scripts/deploy_search.py ./build/search/schools.csv schools
+	python3 scripts/deploy_search.py ./build/search/states.csv states
 
 #### deploy_source_csv          : Deploy local source csv data to S3 bucket
 deploy_source_csv:

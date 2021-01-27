@@ -23,13 +23,13 @@ def get_subset(points, r):
   result = []
   index = rtree.index.Index()
   for i, p in enumerate(points):
-    px = p[4]
-    py = p[5]
-    print(px, py)
-    if np.isnan(px) or np.isnan(py):
+    px = p[1]
+    py = p[2]
+    pz = p[3]
+    if np.isnan(px) or np.isnan(py) or np.isnan(pz) or px == -999 or py == -999 or pz == -999:
       continue
     nearby = index.intersection((px - r, py - r, px + r, py + r))
-    if all(dist([px, py], [points[j][4], points[j][5]]) >= r for j in nearby):
+    if all(dist([px, py], [points[j][1], points[j][2]]) >= r for j in nearby):
       result.append(p)
       index.insert(i, (px, py, px, py))
   return result
@@ -54,7 +54,7 @@ def create_pair_csv(region, df, xVar, yVar, zVar, radius):
     return
 
   # extract data into tuples
-  output_cols = [ 'id', 'name', 'lon', 'lat', xVar, yVar, zVar ]
+  output_cols = [ 'id', xVar, yVar, zVar ]
   tuples = extract_tuples(df, output_cols)
 
   # get subset of points
@@ -63,9 +63,11 @@ def create_pair_csv(region, df, xVar, yVar, zVar, radius):
   # convert tuples to new csv
   output_file = os.path.join(OUTPUT_DIR, xVar + '-' + yVar + '.csv')
   output_df = pd.DataFrame(subset)
-  output_df = output_df.round(3)
+  # output_df['id'] = output_df.index
+  output_df = output_df[[0]]
+  # output_df = output_df.round(3)
   try:
-    output_df.columns = output_cols
+    output_df.columns = ['id']
     output_df.to_csv(output_file, index=False)
     print("reduced", xVar, "/", yVar, "pair to",str(output_df.shape[0]),"points. (", 100*output_df.shape[0]/df.shape[0], "%)")
   except ValueError:
@@ -78,8 +80,8 @@ if __name__ == '__main__':
   dtypes = get_dtypes_dict(region)
   zVar = 'all_sz'
 
-  # do not create pairs with these columns
-  no_pairs = [ 'id', 'state', 'name', 'lon', 'lat', 'fid', 'all_sz', 'state_name', 'city' ]
+  # create pairs with these columns
+  y_vars = ['all_avg', 'all_grd', 'all_coh']
 
   # Read the data dictionary from stdin
   data_df = pd.read_csv(
@@ -94,8 +96,7 @@ if __name__ == '__main__':
   data_df = data_df.reindex(sorted(data_df.columns), axis=1)
 
   # loop through all columns and make pairs
-  for i, c1 in enumerate(data_df.columns):
-    for c2 in data_df.columns[i:]:
-      if c1 != c2 and c1 not in no_pairs and c2 not in no_pairs:
-        create_pair_csv(region, data_df, c1, c2, zVar, radius)
+  for col in y_vars:
+    create_pair_csv(region, data_df, col, 'all_frl', zVar, radius)
+
 

@@ -41,6 +41,10 @@ def clean_name(df, region, col='name'):
         df[col] = df[col].str.replace(
             'elem sch$|el$', 'elementary', case=False)
         df[col] = df[col].str.replace(' sch$| school$', '', case=False)
+    ## add full state name as name
+    if region == 'states':
+        df = add_state_name(df, 'name')
+        df.rename(columns={'name':'state','state_name':'name'}, inplace=True)
     # df[col] = df[col].str.title()
     return df
 
