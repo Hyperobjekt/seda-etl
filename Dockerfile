@@ -33,7 +33,7 @@ RUN rm -rf /tmp/tippecanoe-src
 RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   ln -s /usr/bin/nodejs /usr/bin/node && \
   apt-get -y install nodejs && \
-  npm install -g mapshaper@0.4.106 geojson-polygon-labels@1.2.1 csv2geojson algolia-csv
+  npm install -g mapshaper@0.4.106 geojson-polygon-labels@1.2.1 csv2geojson algolia-csv csv-parse
 
 # Install rust, cargo, and xsv
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -43,9 +43,17 @@ RUN /bin/bash -c "source $HOME/.cargo/env \
 COPY . /app
 WORKDIR /app/
 
-# Install Python packages
-RUN pip3 install pipenv && pipenv install --system
+# Install packages
 RUN npm install
+RUN npm install csv-parse
+
+# FIX: newer versions of setuptools does not support python 3.5, use older version 
+ENV PYTHONWARNINGS=ignore:DEPRECATION
+RUN pip3 install --upgrade 'pip<21' 'setuptools<51'
+
+# Install Python packages
+RUN pip3 install pipenv
+RUN pipenv install --system
 
 # make entrypoint executable
 RUN chmod +x run-task.sh
