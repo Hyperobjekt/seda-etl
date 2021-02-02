@@ -30,7 +30,7 @@ float64,Growth in grades across years,all_grd,SEDA_geodist_pool_GCS_v40.csv,mn_g
 float64,Growth in grades across years (Error),all_grd_e,SEDA_geodist_pool_GCS_v40.csv,mn_grd_eb_moe,subgroup == all
 float64,Trend in test scores across years,all_coh,SEDA_geodist_pool_GCS_v40.csv,mn_coh_eb,subgroup == all
 float64,Trend in test scores across years (Error),all_coh_e,SEDA_geodist_pool_GCS_v40.csv,mn_coh_eb_moe,subgroup == all
-object,Identifier,id,district_grade_estimates.csv,leaidC,subgroup == all
+object,Identifier,id,district_grade_estimates.csv,sedalea,subgroup == all
 float64,Grade 3 averages test scores,all_avg3,district_grade_estimates.csv,mn_gr3,subgroup == all
 float64,Grade 4 averages test scores,all_avg4,district_grade_estimates.csv,mn_gr4,subgroup == all
 float64,Grade 5 averages test scores,all_avg5,district_grade_estimates.csv,mn_gr5,subgroup == all
