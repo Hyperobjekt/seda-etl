@@ -160,22 +160,31 @@ build/tiles/schools.mbtiles: build/geography/schools.geojson
 ### Creates GeoJSON containing all of the data that is used in tilesets.
 ###
 
-census_ftp_base = ftp://ftp2.census.gov/geo/tiger/GENZ2010/
 states-geoid = "this.properties.id = this.properties.GEOID"
 states-name = "this.properties.name = this.properties.NAME"
-counties-pattern = gz_*_*_050_*_500k.zip
-counties-geoid = "this.properties.id = this.properties.STATE + this.properties.COUNTY"
-counties-name = "this.properties.name = this.properties.NAME + ' ' + this.properties.LSAD"
+counties-geoid = "this.properties.id = this.properties.GEOID"
+counties-name = "this.properties.name = this.properties.NAME"
 districts-geoid = "this.properties.id = this.properties.GEOID"
 districts-name = "this.properties.name = this.properties.NAME"
 
 ### Creates counties geojson w/ GEOID and name (no data)
-build/geography/base/%.geojson:
+# build/geography/base/%.geojson:
+# 	mkdir -p $(dir $@)
+# 	node ./scripts/update_geojson.js $* build/source_data/shapes/$*.geojson $@
+# 	echo "{ \"type\":\"FeatureCollection\", \"features\": " | cat - $@ > build/geography/base/tmp.geojson
+# 	echo "}" >> build/geography/base/tmp.geojson
+# 	mv build/geography/base/tmp.geojson $@
+
+
+### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
+build/geography/base/counties.geojson:
 	mkdir -p $(dir $@)
-	node ./scripts/update_geojson.js $* build/source_data/shapes/$*.geojson $@
-	echo "{ \"type\":\"FeatureCollection\", \"features\": " | cat - $@ > build/geography/base/tmp.geojson
-	echo "}" >> build/geography/base/tmp.geojson
-	mv build/geography/base/tmp.geojson $@
+	mapshaper build/source_data/shapes/counties/*.shp combine-files \
+		-each $(counties-geoid) \
+		-each $(counties-name) \
+		-filter-fields id,name \
+		-uniq id \
+		-o - combine-layers format=geojson > $@
 
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
 build/geography/base/states.geojson:
