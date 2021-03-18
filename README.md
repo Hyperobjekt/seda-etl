@@ -20,10 +20,9 @@ The `.env.local` file sets all of the required environment variables required to
 
 - `DATA_BUCKET`: S3 bucket name where source and build data are stored (e.g. edop-data-bucket)
 - `EXPORT_DATA_BUCKET`: S3 bucket where the public data exports are deployed (e.g. e)
-- `DATA_VERSION`: version of the data (e.g. 1.0.0)
+- `DATA_VERSION`: version of the data, determines what folder the static data is deployed, and the name of the tileset
 - `AWS_ACCESS_ID`: AWS access id for S3 deploy / CloudFront Invalidation / ECS service updates
 - `AWS_SECRET_KEY`: AWS secret key
-- `BUILD_ID`: build id (dev or prod)
 - `MAPBOX_USERNAME`: mapbox username for tileset deploy
 - `MAPBOX_TOKEN`: mapbox token for tileset deploy
 - `ALGOLIA_ID`: algolia id for search deploy
@@ -98,3 +97,8 @@ deploy_source_zip          : Deploy local source zip data to S3 bucket
 deploy_similar             : Deploy similar locations csv to S3 and invalidate CloudFront cache
 deploy_flagged             : Deploy school flags to S3 and invalidate CloudFront cache
 ```
+
+## Source Data
+
+To run the pipeline, the source files must be placed in the `source` directory, or alternatively a source zip file can be provided.
+

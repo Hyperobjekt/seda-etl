@@ -4,7 +4,7 @@
 # This script takes a zip file containing the input data
 # required to build all of the SEDA exporer data.  It
 # renames all of the files accordingly and outputs it
-# into the build/source_data directory.
+# into the source directory.
 ########
 
 # exit when any command fails
