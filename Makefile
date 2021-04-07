@@ -443,12 +443,28 @@ build/similar/schools.csv: source/schools_similar.csv
 ### FLAGGED SCHOOLS
 ###
 
-flags = sped gifted lep
+flags = sped gifted lep missing
 flagged: $(foreach t, $(flags), build/flagged/$(t).json)
 
 build/flagged/%.json: source/flag_%.csv
 	mkdir -p $(dir $@)
 	csvgrep $< -c 2 -m 1 | python3 ./scripts/ncessch_to_json_array.py > $@
+
+# Convert the missing flags CSV file to JSON:
+# - csvgrep: pull rows where flag = 1
+# - csvcut: pull only the id column
+# - tail: remove the column header
+# - csvformat: add double quotes to entries, replace new lines with commas
+# - sed: drop the trailing comma from the output
+# - awk: wrap the output in square brackets so it is a javascript array
+build/flagged/missing.json: source/flag_missing.csv
+	mkdir -p $(dir $@)
+	csvgrep source/flag_missing.csv -c 3 -m 1 | \
+	csvcut -c 1 | \
+	tail -n +2 | \
+	csvformat -U 1 -M "," | \
+	sed -E 's/,$$/ /g' | \
+	awk '{print "["$$1"]"}' > $@
 
 ###
 ### MARGIN OF ERROR

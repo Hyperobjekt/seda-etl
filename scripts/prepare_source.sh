@@ -38,6 +38,7 @@ echo "successfully prepared associated variables"
 mv source/flags/spedidea\ flag.csv source/flag_sped.csv
 mv source/flags/lep\ flag.csv source/flag_lep.csv
 mv source/flags/gifted\ flag.csv source/flag_gifted.csv
+mv source/flags/missing\ flag.csv source/flag_missing.csv
 rm -rf source/flags
 echo "successfully prepared flags"
 
@@ -47,19 +48,19 @@ rm -rf source/discoveries
 echo "successfully prepared discoveries data"
 
 # rename SEDA data
-for FILE in source/SEDA_county*.csv; do
+for FILE in source/seda_county*.csv; do
     mv $FILE source/SEDA_counties.csv
 done
 
-for FILE in source/SEDA_geodist*.csv; do
+for FILE in source/seda_geodist*.csv; do
     mv $FILE source/SEDA_districts.csv
 done
 
-for FILE in source/SEDA_state*.csv; do
+for FILE in source/seda_state*.csv; do
     mv $FILE source/SEDA_states.csv
 done
 
-for FILE in source/SEDA_school*.csv; do
+for FILE in source/seda_school*.csv; do
     mv $FILE source/SEDA_schools.csv
 done
 echo "successfully prepared SEDA data files"
