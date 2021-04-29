@@ -7,18 +7,15 @@
 # into the source directory.
 ########
 
-if [ $# -eq 0 ]
-  then
-    echo "No zip file provided"
-    exit 1
+if [ $# -eq 0 ]; then
+    echo "No zip file provided, using existing source folder"
+else
+    # cleanup
+    rm -rf source
+    mkdir -p source
+    # extract source data and place accordingly
+    unzip -o $1 -d source
 fi
-
-# cleanup
-rm -rf source
-mkdir -p source
-
-# extract source data and place accordingly
-unzip -o $1 -d source
 
 # rename similar places files
 mv source/similar-places/SchoolMatch.csv source/schools_similar.csv
@@ -38,7 +35,7 @@ echo "successfully prepared associated variables"
 mv source/flags/spedidea\ flag.csv source/flag_sped.csv
 mv source/flags/lep\ flag.csv source/flag_lep.csv
 mv source/flags/gifted\ flag.csv source/flag_gifted.csv
-mv source/flags/missing\ flag.csv source/flag_missing.csv
+mv source/flags/cell_flags.csv source/flag_missing.csv
 rm -rf source/flags
 echo "successfully prepared flags"
 

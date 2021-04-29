@@ -2,6 +2,8 @@
 null :=
 space := $(null) $(null)
 comma := ,
+dot := .
+hyphen := -
 
 # available region types
 geo_types = states counties districts schools
@@ -490,7 +492,7 @@ deploy_service:
 
 #### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
 deploy_tilesets:
-	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(DATA_VERSION); done
+	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(subst $(dot),$(hyphen),$(DATA_VERSION)); done
 
 #### deploy_export_data         : Deploy the csv / geojson exports
 deploy_export_data:
