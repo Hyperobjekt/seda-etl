@@ -2,6 +2,8 @@
 null :=
 space := $(null) $(null)
 comma := ,
+dot := .
+hyphen := -
 
 # available region types
 geo_types = states counties districts schools
@@ -13,10 +15,10 @@ districts_id = sedalea
 schools_id = sedasch
 
 # master data file names
-states_main = SEDA_state_pool_GCS_v40.csv
-counties_main = SEDA_county_pool_GCS_v40.csv
-districts_main = SEDA_geodist_pool_GCS_v40.csv
-schools_main = SEDA_school_pool_GCS_v40_latlong_city.csv
+states_main = SEDA_states.csv
+counties_main = SEDA_counties.csv
+districts_main = SEDA_districts.csv
+schools_main = SEDA_schools.csv
 
 # margin of error var names (without demographic)
 suffix_moe = avg_e grd_e coh_e
@@ -67,8 +69,7 @@ discovery_files = build/scatterplot/districts/all_avg3.csv build/scatterplot/dis
 reduced_pair_files = build/scatterplot/schools/reduced/schools.csv
 
 # use this build ID if one is not set in the environment variables
-BUILD_ID?=dev
-DATA_VERSION?=1.1.0
+DATA_VERSION?=v4.1-dev
 
 .PHONY: help tiles data search geojson scatterplot deploy_s3 deploy_search deploy_tilesets deploy_scatterplot deploy_all deploy_flagged deploy_similar
 
@@ -170,7 +171,7 @@ districts-name = "this.properties.name = this.properties.NAME"
 ### Creates counties geojson w/ GEOID and name (no data)
 # build/geography/base/%.geojson:
 # 	mkdir -p $(dir $@)
-# 	node ./scripts/update_geojson.js $* build/source_data/shapes/$*.geojson $@
+# 	node ./scripts/update_geojson.js $* source/shapes/$*.geojson $@
 # 	echo "{ \"type\":\"FeatureCollection\", \"features\": " | cat - $@ > build/geography/base/tmp.geojson
 # 	echo "}" >> build/geography/base/tmp.geojson
 # 	mv build/geography/base/tmp.geojson $@
@@ -179,7 +180,7 @@ districts-name = "this.properties.name = this.properties.NAME"
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
 build/geography/base/counties.geojson:
 	mkdir -p $(dir $@)
-	mapshaper build/source_data/shapes/counties/*.shp combine-files \
+	mapshaper source/shapes/counties/*.shp combine-files \
 		-each $(counties-geoid) \
 		-each $(counties-name) \
 		-filter-fields id,name \
@@ -189,7 +190,7 @@ build/geography/base/counties.geojson:
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
 build/geography/base/states.geojson:
 	mkdir -p $(dir $@)
-	mapshaper build/source_data/shapes/states/*.shp combine-files \
+	mapshaper source/shapes/states/*.shp combine-files \
 		-each $(states-geoid) \
 		-each $(states-name) \
 		-filter-fields id,name \
@@ -199,7 +200,7 @@ build/geography/base/states.geojson:
 ### Creates districts geojson w/ GEOID and name (no data) from seda shapefiles
 build/geography/base/districts.geojson:
 	mkdir -p $(dir $@)
-	mapshaper build/source_data/shapes/districts/*.shp combine-files \
+	mapshaper source/shapes/districts/*.shp combine-files \
 		-each $(districts-geoid) \
 		-each $(districts-name) \
 		-filter-fields id,name \
@@ -268,7 +269,7 @@ build/schools.csv: build/from_dict/schools.csv
 
 ### Extracts data based on the dictionary file for counties / districts / schools
 .SECONDEXPANSION:
-build/from_dict/%.csv: build/source_data/$$*_cov.csv build/source_data/$$($$*_main) build/source_data/district_grade_estimates.csv
+build/from_dict/%.csv: source/$$*_cov.csv source/$$($$*_main) source/district_grade_estimates.csv
 	mkdir -p $(dir $@)
 	cat dictionaries/$*_dictionary.csv | \
 	python3 scripts/create_data_from_dictionary.py $(dir $<) > $@
@@ -332,7 +333,7 @@ build/explorer/schools.csv: build/data/schools.csv
 ###
 
 ### Fetch source data used for the build from S3 bucket
-build/source_data/%.csv:
+source/%.csv:
 	mkdir -p $(dir $@)
 
 
@@ -425,14 +426,14 @@ similar: $(foreach t, $(geo_types), build/similar/$(t).csv)
 build/similar/states.csv:
 	mkdir -p $(dir $@)
 
-build/similar/%.csv: build/source_data/%_similar.csv
+build/similar/%.csv: source/%_similar.csv
 	mkdir -p $(dir $@)
 	cat $< | \
 	sed '1s/.*/id,sim1,sim2,sim3,sim4,sim5/' | \
 	csvcut -c id,sim1,sim2,sim3,sim4,sim5 > $@
 	xsv partition -p 2 id $(dir $@)$* $@
 
-build/similar/schools.csv: build/source_data/schools_similar.csv
+build/similar/schools.csv: source/schools_similar.csv
 	mkdir -p $(dir $@)
 	cat $< | \
 	sed '1s/.*/id,sim1,sim2,sim3,sim4,sim5/' | \
@@ -444,12 +445,28 @@ build/similar/schools.csv: build/source_data/schools_similar.csv
 ### FLAGGED SCHOOLS
 ###
 
-flags = sped gifted lep
+flags = sped gifted lep missing
 flagged: $(foreach t, $(flags), build/flagged/$(t).json)
 
-build/flagged/%.json: build/source_data/flag_%.csv
+build/flagged/%.json: source/flag_%.csv
 	mkdir -p $(dir $@)
 	csvgrep $< -c 2 -m 1 | python3 ./scripts/ncessch_to_json_array.py > $@
+
+# Convert the missing flags CSV file to JSON:
+# - csvgrep: pull rows where flag = 1
+# - csvcut: pull only the id column
+# - tail: remove the column header
+# - csvformat: add double quotes to entries, replace new lines with commas
+# - sed: drop the trailing comma from the output
+# - awk: wrap the output in square brackets so it is a javascript array
+build/flagged/missing.json: source/flag_missing.csv
+	mkdir -p $(dir $@)
+	csvgrep source/flag_missing.csv -c 3 -m 1 | \
+	csvcut -c 1 | \
+	tail -n +2 | \
+	csvformat -U 1 -M "," | \
+	sed -E 's/,$$/ /g' | \
+	awk '{print "["$$1"]"}' > $@
 
 ###
 ### MARGIN OF ERROR
@@ -475,7 +492,7 @@ deploy_service:
 
 #### deploy_tilesets            : Deploy the tilesets to mapbox using the upload API
 deploy_tilesets:
-	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-v4-$(BUILD_ID); done
+	for f in build/tiles/*.mbtiles; do node ./scripts/deploy_tilesets.js $$f $$(basename "$${f%.*}")-$(subst $(dot),$(hyphen),$(DATA_VERSION)); done
 
 #### deploy_export_data         : Deploy the csv / geojson exports
 deploy_export_data:
@@ -495,17 +512,17 @@ deploy_search:
 
 #### deploy_source_csv          : Deploy local source csv data to S3 bucket
 deploy_source_csv:
-	for f in build/source_data/*.csv; do gzip $$f; done
-	for f in build/source_data/*.csv.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+	for f in source/*.csv; do gzip $$f; done
+	for f in source/*.csv.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
 #### deploy_source_geojson      : Deploy local source geojson data to S3 bucket
 deploy_source_geojson:
-	for f in build/source_data/*.geojson; do gzip $$f; done
-	for f in build/source_data/*.geojson.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+	for f in source/*.geojson; do gzip $$f; done
+	for f in source/*.geojson.gz; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
 #### deploy_source_zip          : Deploy local source zip data to S3 bucket
 deploy_source_zip:
-	for f in build/source_data/*.zip; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
+	for f in source/*.zip; do aws s3 cp $$f s3://$(DATA_BUCKET)/source/$(DATA_VERSION)/$$(basename $$f) --acl=public-read; done
 
   
 deploy_s3:

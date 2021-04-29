@@ -4,7 +4,7 @@
 # This script takes a zip file containing the input data
 # required to build all of the SEDA exporer data.  It
 # renames all of the files accordingly and outputs it
-# into the build/source_data directory.
+# into the source directory.
 ########
 
 # exit when any command fails
@@ -60,14 +60,31 @@ do
     esac
 done
 
+if [[ -z "${AWS_ACCESS_ID}" ]]; then
+    printf '%s\n' "Missing AWS_ACCESS_ID environment variable, could not configure AWS CLI." >&2
+    exit 1
+fi
+if [[ -z "${AWS_SECRET_KEY}" ]]; then
+    printf '%s\n' "Missing AWS_SECRET_KEY environment variable, could not configure AWS CLI." >&2
+    exit 1
+fi
+aws configure set aws_access_key_id $AWS_ACCESS_ID
+aws configure set aws_secret_access_key $AWS_SECRET_KEY
+aws configure set default.region us-east-1
+
 # clean existing build
 if [[ $SHOULD_CLEAN -eq 1 ]]; then
     make clean
 fi
 
 if [[ $SOURCE_FILE != "" ]]; then
-    # load the source data
+    # load the source data from a file
     ./scripts/prepare_source.sh $SOURCE_FILE
+else
+    # load the source data from S3
+    rm -rf source
+    aws s3 cp s3://seda-data/source/$DATA_VERSION source --recursive
+    ./scripts/prepare_source.sh
 fi
 
 # Determine which pieces to build
@@ -97,17 +114,6 @@ if [[ $SHOULD_DEPLOY -eq 1 ]]; then
 
     # Deploy data to S3 endpoint
     if [[ $SHOULD_BUILD_DATA -eq 1 ]]; then
-        if [[ -z "${AWS_ACCESS_ID}" ]]; then
-            printf '%s\n' "Missing AWS_ACCESS_ID environment variable, could not configure AWS CLI." >&2
-            exit 1
-        fi
-        if [[ -z "${AWS_SECRET_KEY}" ]]; then
-            printf '%s\n' "Missing AWS_SECRET_KEY environment variable, could not configure AWS CLI." >&2
-            exit 1
-        fi
-        aws configure set aws_access_key_id $AWS_ACCESS_ID
-        aws configure set aws_secret_access_key $AWS_SECRET_KEY
-        aws configure set default.region us-east-1
         make deploy_s3
     fi
 

@@ -1,0 +1,35 @@
+name: Build and deploy tilesets and static assets
+
+# Triggers the workflow on push of a new tag to origin.
+on:
+  push:
+    tags:
+      - '*.*.*'
+  workflow_dispatch:
+
+jobs:
+  shapes-and-data-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set variables output
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Write .env file
+        env:
+          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+        run: |
+          touch .env
+          echo DATA_BUCKET=${{ secrets.DATA_BUCKET }} >> .env
+          echo AWS_ACCESS_ID=${{ secrets.AWS_ACCESS_ID }} >> .env
+          echo AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }} >> .env
+          echo MAPBOX_USERNAME=${{ secrets.MAPBOX_USERNAME }} >> .env
+          echo MAPBOX_TOKEN=${{ secrets.MAPBOX_TOKEN }} >> .env
+          echo ALGOLIA_ID=${{ secrets.ALGOLIA_ID }} >> .env
+          echo ALGOLIA_ID=${{ secrets.ALGOLIA_KEY }} >> .env
+          echo CLOUDFRONT_ID=${{ secrets.CLOUDFRONT_ID }} >> .env
+          echo DATA_VERSION=$RELEASE_VERSION >> .env
+          cat .env
+      - name: Pull docker image
+        run: docker pull hyperobjekt/seda-etl
+      - name: Run docker image
+        run: docker run --env-file .env hyperobjekt/seda-etl --deploy

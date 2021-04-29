@@ -1,4 +1,5 @@
 build
+source
 seda_data
 .env.local
 .env.production
@@ -9,3 +10,6 @@ seda_data
 node_modules
 source_data
 __pycache__
+__MACOSX
+Icon
+.DS_Store
